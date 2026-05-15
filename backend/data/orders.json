@@ -200,5 +200,55 @@
     "paymentProvider": "GCASH",
     "paymentReference": "AOS-4-MP5FA90V",
     "deliveryNote": ""
+  },
+  {
+    "id": 5,
+    "userId": 1,
+    "fullName": "Aldrich",
+    "address": "Baranggay ll, Daet, Camarines Norte",
+    "gcashNumber": "09679836270",
+    "customerGcashNumber": "",
+    "selectedLandmark": "Camarines Norte State College (Main Campus)",
+    "customLandmark": "",
+    "needsLandmarkConfirmation": true,
+    "landmarkStatus": "PENDING",
+    "paymentMethod": "COD",
+    "items": [
+      {
+        "id": 1,
+        "slug": "aurum-noir-parfum",
+        "name": "Versace Eros",
+        "description": "The ultimate fragrance for the bold, passionate, and confident man.",
+        "price": 200,
+        "stock": 1,
+        "imageUrl": "/uploads/products/1778805119556-4de66a1b-7b94-4615-b51f-5936380faa23.jpeg",
+        "quantity": 1
+      }
+    ],
+    "total": 200,
+    "status": "READY_TO_SHIP",
+    "chatMessages": [
+      {
+        "id": 1,
+        "senderId": 1,
+        "senderName": "Aldrich",
+        "senderRole": "ADMIN",
+        "message": "Sir sdfgh❤️",
+        "createdAt": "2026-05-15T09:37:06.870Z"
+      },
+      {
+        "id": 2,
+        "senderId": 1,
+        "senderName": "Aldrich",
+        "senderRole": "CUSTOMER",
+        "message": "sdfghjk",
+        "createdAt": "2026-05-15T09:37:29.686Z"
+      }
+    ],
+    "createdAt": "2026-05-15T09:36:31.852Z",
+    "updatedAt": "2026-05-15T09:37:29.686Z",
+    "paymentProvider": "COD",
+    "paymentReference": "AOS-5-MP6Q3CKW",
+    "deliveryNote": ""
   }
 ]

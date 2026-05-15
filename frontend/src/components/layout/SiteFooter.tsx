@@ -4,11 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const socialLinks = [
-    { label: "LinkedIn", href: "https://example.com/linkedin", icon: "in" },
-    { label: "Messenger", href: "https://example.com/messenger", icon: "💬" },
-    { label: "Facebook", href: "https://example.com/facebook", icon: "f" },
-    { label: "Instagram", href: "https://example.com/instagram", icon: "◎" },
-    { label: "TikTok", href: "https://example.com/tiktok", icon: "♪" }
+    { label: "LinkedIn", href: "https://www.linkedin.com/in/?_l=en_US", icon: "in" },
+    { label: "Messenger", href: "https://www.messenger.com/e2ee/t/1314771763743145", icon: "💬" },
+    { label: "Facebook", href: "https://www.facebook.com/search/top?q=age%20of%20scent", icon: "f" },
+    { label: "Instagram", href: "https://www.instagram.com/yong_ancysh?igsh=MWRveXViMXJmaml4Mw==", icon: "◎" },
+    { label: "TikTok", href: "https://www.tiktok.com/@yong_an18?_r=1&_t=ZS-96MxEowDAf3", icon: "♪" }
 ];
 
 export default function SiteFooter() {
@@ -48,7 +48,6 @@ export default function SiteFooter() {
                     <Link href="/#story">Brand Story</Link>
                     <Link href="/shop">Shop</Link>
                     <Link href="/feedback">Feedback</Link>
-                    <Link href="/#contact">Contact</Link>
                     <Link href="/settings">Settings</Link>
                     <Link href="/privacy">Privacy Policy</Link>
                     <Link href="/terms">Terms and Conditions</Link>

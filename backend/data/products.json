@@ -8,10 +8,10 @@
     "volume": "85 ml",
     "mood": "Evening signature",
     "price": 200,
-    "stock": 1,
+    "stock": 0,
     "imageUrl": "/uploads/products/1778805119556-4de66a1b-7b94-4615-b51f-5936380faa23.jpeg",
     "isActive": true,
-    "updatedAt": "2026-05-15T01:16:48.165Z"
+    "updatedAt": "2026-05-15T09:36:31.846Z"
   },
   {
     "id": 2,
