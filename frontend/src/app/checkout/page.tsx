@@ -5,7 +5,7 @@ import Link from "next/link";
 import PageShell from "@/components/layout/PageShell";
 import { api, mediaUrl } from "@/lib/api";
 import { clearCart, getCart, type CartItem } from "@/lib/cart";
-import { getAuthUser, isLoggedIn } from "@/lib/auth";
+import { getAuthUser, isLoggedIn, updateAuthUser } from "@/lib/auth";
 
 type DeliveryLandmark = {
     id: number;
@@ -52,12 +52,33 @@ export default function CheckoutPage() {
     const [mounted, setMounted] = useState(false);
     const [receipt, setReceipt] = useState<ReceiptData | null>(null);
     const [receiptWindowState, setReceiptWindowState] = useState<"open" | "minimized" | "closed">("open");
+    const [freshUser, setFreshUser] = useState(getAuthUser());
 
     useEffect(() => {
         setCart(getCart());
         setMounted(true);
-        const user = getAuthUser();
-        if (user?.fullName) setFullName(user.fullName);
+        const savedUser = getAuthUser();
+        setFreshUser(savedUser);
+        if (savedUser?.fullName) setFullName(savedUser.fullName);
+
+        async function refreshCurrentUser() {
+            if (!isLoggedIn()) return;
+            try {
+                const response = await api.get<{
+                    success: boolean;
+                    message: string;
+                    data: NonNullable<ReturnType<typeof getAuthUser>> | { user: NonNullable<ReturnType<typeof getAuthUser>> };
+                }>("/auth/me");
+
+                const latestUser = "user" in response.data ? response.data.user : response.data;
+                if (!latestUser) return;
+                updateAuthUser(latestUser);
+                setFreshUser(latestUser);
+                if (latestUser.fullName) setFullName(latestUser.fullName);
+            } catch {
+                // Keep checkout usable while the hosted backend wakes up.
+            }
+        }
 
         async function loadSettings() {
             try {
@@ -72,6 +93,7 @@ export default function CheckoutPage() {
             }
         }
 
+        refreshCurrentUser();
         loadSettings();
     }, []);
 
@@ -85,7 +107,7 @@ export default function CheckoutPage() {
     );
     const shippingFee = selectedLandmark === "CUSTOM" ? 0 : Number(selectedLandmarkData?.shippingFee || 0);
     const total = subtotal + shippingFee;
-    const user = mounted ? getAuthUser() : null;
+    const user = mounted ? freshUser : null;
     const verificationStatus = user?.verificationStatus || "UNVERIFIED";
 
     async function handleCheckout(event: FormEvent<HTMLFormElement>) {

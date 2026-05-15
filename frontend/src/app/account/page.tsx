@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import PageShell from "@/components/layout/PageShell";
-import { getAuthUser, isLoggedIn } from "@/lib/auth";
+import { getAuthUser, isLoggedIn, updateAuthUser } from "@/lib/auth";
 import { api, mediaUrl } from "@/lib/api";
 import { formatDateTime } from "@/lib/site-preferences";
 
@@ -65,18 +65,53 @@ export default function AccountPage() {
     const [transactionDecisions, setTransactionDecisions] = useState<Record<number, "ACCEPTED" | "REJECTED">>({});
 
     useEffect(() => {
+        let active = true;
+
         setUser(getAuthUser());
         setMounted(true);
+
+        async function refreshCurrentUser() {
+            if (!isLoggedIn()) return;
+            try {
+                const response = await api.get<{
+                    success: boolean;
+                    message: string;
+                    data: NonNullable<UserState> | { user: NonNullable<UserState> };
+                }>("/auth/me");
+
+                const freshUser = "user" in response.data ? response.data.user : response.data;
+                if (!active || !freshUser) return;
+                updateAuthUser(freshUser);
+                setUser(freshUser);
+            } catch {
+                // Keep the locally saved user visible when the server is waking up.
+            }
+        }
+
         async function loadOrders() {
             if (!isLoggedIn()) return;
             try {
                 const response = await api.get<{ success: boolean; message: string; data: MyOrder[] }>("/orders/mine");
-                setOrders(response.data || []);
+                if (active) setOrders(response.data || []);
             } catch {
-                setOrders([]);
+                if (active) setOrders([]);
             }
         }
+
+        refreshCurrentUser();
         loadOrders();
+        function syncSavedUser() {
+            setUser(getAuthUser());
+        }
+
+        window.addEventListener("focus", refreshCurrentUser);
+        window.addEventListener("auth-updated", syncSavedUser);
+
+        return () => {
+            active = false;
+            window.removeEventListener("focus", refreshCurrentUser);
+            window.removeEventListener("auth-updated", syncSavedUser);
+        };
     }, []);
 
     const paymentRecords = useMemo(() => {
@@ -164,6 +199,7 @@ export default function AccountPage() {
                     <p className="eyebrow">Verification</p>
                     <h3>Account review</h3>
                     <p><strong>Status:</strong> <span className={`status-badge status-${verificationStatus.toLowerCase()}`}>{verificationStatus}</span></p>
+                    <p className="muted account-status-note">This status refreshes from the backend when you open the account page or return to this tab.</p>
                     <div className="button-row"><Link href="/age-verification" className="btn">Manage Verification</Link></div>
                 </div>
             </div>

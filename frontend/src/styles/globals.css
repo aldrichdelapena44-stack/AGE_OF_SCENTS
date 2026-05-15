@@ -3659,3 +3659,205 @@ input[type="file"]::file-selector-button {
         margin-bottom: 0;
     }
 }
+
+/* Mobile responsiveness fix: upload controls, hero story card, and account status clarity */
+.upload-field {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(120px, 0.72fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 3.25rem;
+    padding: 0.35rem;
+    border: 1px solid rgba(215, 180, 106, 0.22);
+    border-radius: 1rem;
+    background: rgba(0, 0, 0, 0.18);
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.upload-field input[type="file"] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.upload-field__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.7rem;
+    padding: 0 1rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #f8e6a5, #c38a39);
+    color: #1d1308;
+    font-weight: 950;
+    letter-spacing: 0.04em;
+    text-align: center;
+    white-space: nowrap;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.upload-field__name {
+    min-width: 0;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.95rem;
+}
+
+.upload-field--small {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+}
+
+.upload-field--small .upload-field__name {
+    font-size: 0.75rem;
+    text-align: center;
+}
+
+.account-status-note {
+    margin-top: 0.65rem;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 740px) {
+    .story-submit-form {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.85rem;
+        width: 100%;
+    }
+
+    .story-submit-form > input,
+    .story-submit-form > button,
+    .story-submit-form > .upload-field {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .upload-field,
+    .upload-field--story {
+        grid-template-columns: 1fr;
+        gap: 0.45rem;
+        padding: 0.45rem;
+        border-radius: 1.1rem;
+        text-align: center;
+    }
+
+    .upload-field__button {
+        width: 100%;
+        min-height: 3.05rem;
+        padding: 0 0.9rem;
+        font-size: clamp(0.92rem, 4.2vw, 1.08rem);
+        letter-spacing: 0.055em;
+    }
+
+    .upload-field__name {
+        width: 100%;
+        padding: 0 0.55rem 0.15rem;
+        font-size: clamp(0.82rem, 3.5vw, 0.95rem);
+        text-align: center;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .my-story-controls .client-story--editable > div {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .my-story-controls input:not([type="file"]),
+    .my-story-controls .btn,
+    .my-story-controls .upload-field {
+        width: 100%;
+    }
+
+    .hero-copy-window--open,
+    .hero-copy-window--minimized,
+    .hero-copy-window--closed {
+        position: relative;
+        left: auto;
+        right: auto;
+        bottom: auto;
+        top: auto;
+        transform: none;
+        width: min(100%, 420px);
+        margin: 0 auto;
+        z-index: 7;
+        align-self: center;
+    }
+
+    .hero-copy-window--closed,
+    .hero-copy-window--minimized {
+        order: 3;
+        margin-top: 0.6rem;
+        margin-bottom: 0;
+    }
+
+    .hero-copy-window__restore {
+        width: calc(100% - 1rem);
+        margin: 0.5rem;
+        text-align: center;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .cinematic-hero__content--carousel {
+        grid-template-rows: auto auto auto;
+        justify-items: center;
+        gap: 1rem;
+        min-height: auto;
+        padding-bottom: 6.4rem;
+    }
+
+    .hero-mobile-product-preview {
+        order: 2;
+        width: min(calc(100vw - 32px), 460px);
+        min-height: clamp(280px, 72vw, 380px);
+        margin-inline: auto;
+    }
+
+    .hero-mobile-product-preview__image {
+        width: 100%;
+        height: auto;
+        max-height: clamp(260px, 68vw, 360px);
+        object-fit: cover;
+        object-position: center;
+    }
+
+    .hero-arrow {
+        bottom: clamp(5.6rem, 17vw, 7rem);
+    }
+
+    .hero-dots {
+        bottom: 2.7rem;
+    }
+}
+
+@media (max-width: 430px) {
+    .story-share-strip {
+        padding: 1.25rem;
+    }
+
+    .hero-mobile-product-preview {
+        width: calc(100vw - 28px);
+        min-height: clamp(260px, 76vw, 330px);
+        padding: 0.45rem;
+    }
+
+    .hero-mobile-product-preview__image {
+        max-height: clamp(245px, 72vw, 315px);
+    }
+
+    .hero-copy-window--open,
+    .hero-copy-window--minimized,
+    .hero-copy-window--closed {
+        width: 100%;
+    }
+}

@@ -21,8 +21,7 @@ export default function AgeVerificationPage() {
     const [records, setRecords] = useState<VerificationRecord[]>([]);
     const [loading, setLoading] = useState(false);
     const [mounted, setMounted] = useState(false);
-
-    const user = mounted ? getAuthUser() : null;
+    const [user, setUser] = useState(getAuthUser());
 
     async function loadRecords() {
         try {
@@ -41,10 +40,37 @@ export default function AgeVerificationPage() {
     }
 
     useEffect(() => {
+        let active = true;
+
+        async function refreshCurrentUser() {
+            if (!isLoggedIn()) return;
+            try {
+                const response = await api.get<{
+                    success: boolean;
+                    message: string;
+                    data: NonNullable<ReturnType<typeof getAuthUser>> | { user: NonNullable<ReturnType<typeof getAuthUser>> };
+                }>("/auth/me");
+
+                const freshUser = "user" in response.data ? response.data.user : response.data;
+                if (!active || !freshUser) return;
+                updateAuthUser(freshUser);
+                setUser(freshUser);
+            } catch {
+                if (active) setUser(getAuthUser());
+            }
+        }
+
         setMounted(true);
         if (isLoggedIn()) {
+            refreshCurrentUser();
             loadRecords();
         }
+
+        window.addEventListener("focus", refreshCurrentUser);
+        return () => {
+            active = false;
+            window.removeEventListener("focus", refreshCurrentUser);
+        };
     }, []);
 
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -142,11 +168,15 @@ export default function AgeVerificationPage() {
 
                 <div className="form-group">
                     <label>Upload ID image</label>
-                    <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        onChange={(event) => setIdImage(event.target.files?.[0] || null)}
-                    />
+                    <label className="upload-field">
+                        <span className="upload-field__button">Choose file</span>
+                        <span className="upload-field__name">{idImage ? idImage.name : "No file chosen"}</span>
+                        <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            onChange={(event) => setIdImage(event.target.files?.[0] || null)}
+                        />
+                    </label>
                 </div>
 
                 <button className="btn" type="submit" disabled={loading}>

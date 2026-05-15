@@ -103,7 +103,7 @@ const storySteps = [
   {
     number: "03",
     title: "For Every Pinoy",
-    text: "A high-quality fragrance that doesn't break the bank. Because looking and smelling \"premium\" shouldn't be a luxury it should be your daily standard",
+    text: "A high-quality fragrance that doesn't break the bank. Because looking and smelling \"premium\" shouldn't be a luxury—it should be your daily standard",
   },
 ];
 
@@ -635,14 +635,18 @@ export default function HomePage() {
                         }}
                         placeholder="Update your note"
                       />
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={(event) => {
-                          handleStoryReplace(story.id, event.target.files?.[0]);
-                          event.currentTarget.value = "";
-                        }}
-                      />
+                      <label className="upload-field upload-field--small">
+                        <span className="upload-field__button">Replace photo</span>
+                        <span className="upload-field__name">Choose new image</span>
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={(event) => {
+                            handleStoryReplace(story.id, event.target.files?.[0]);
+                            event.currentTarget.value = "";
+                          }}
+                        />
+                      </label>
                       <button
                         className="btn btn--small btn--ghost"
                         type="button"
@@ -658,11 +662,15 @@ export default function HomePage() {
           ) : null}
 
           <form className="story-submit-form" onSubmit={handleStorySubmit}>
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={(event) => chooseStoryFile(event.target.files?.[0])}
-            />
+            <label className="upload-field upload-field--story">
+              <span className="upload-field__button">Choose file</span>
+              <span className="upload-field__name">{storyFile ? storyFile.name : "No file chosen"}</span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => chooseStoryFile(event.target.files?.[0])}
+              />
+            </label>
             <input
               value={storyNote}
               maxLength={240}
