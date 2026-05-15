@@ -1,7 +1,6 @@
 import path from "path";
 import { Request, Response } from "express";
-import { getVerificationsByUser, submitVerification } from "../services/verification.service";
-import { updateUserVerificationStatus } from "../utils/auth-store";
+import { getVerificationsByUser, submitVerification, syncUserVerificationStatus } from "../services/verification.service";
 import { fail, ok } from "../utils/response";
 
 type RequestWithUser = Request & {
@@ -29,9 +28,14 @@ export function submitAgeVerification(req: RequestWithUser, res: Response) {
         fileUrl
     });
 
-    updateUserVerificationStatus(req.user!.id, "PENDING");
+    const syncedUser = syncUserVerificationStatus(req.user!.id);
 
-    return ok(res, { ...submission, verificationStatus: "PENDING" }, "Verification submitted.", 201);
+    return ok(
+        res,
+        { ...submission, verificationStatus: syncedUser?.verificationStatus || submission.status },
+        "Verification submitted.",
+        201
+    );
 }
 
 export function listMyVerifications(req: RequestWithUser, res: Response) {

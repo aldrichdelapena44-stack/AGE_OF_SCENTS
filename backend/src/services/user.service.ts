@@ -1,4 +1,5 @@
 import { getUserById, sanitizeUser } from "../utils/auth-store";
+import { syncUserVerificationStatus } from "./verification.service";
 
 export function getUserProfile(userId: number) {
     const user = getUserById(userId);
@@ -7,5 +8,6 @@ export function getUserProfile(userId: number) {
         throw new Error("User not found.");
     }
 
-    return sanitizeUser(user);
+    const syncedUser = syncUserVerificationStatus(userId) || user;
+    return sanitizeUser(syncedUser);
 }

@@ -20,6 +20,9 @@ import { errorMiddleware } from "./middlewares/error.middleware";
 
 export const app = express();
 
+// Render/Vercel sit behind proxies. This keeps rate limiting accurate and stable.
+app.set("trust proxy", 1);
+
 const allowedOrigins = [
     process.env.CORS_ORIGIN,
     process.env.FRONTEND_URL,
@@ -72,7 +75,7 @@ app.use(cors(corsOptions));
  */
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    limit: 3000,
+    limit: 10000,
     message: {
         success: false,
         message: "Too many requests, please wait a moment and try again.",
@@ -87,7 +90,7 @@ const generalLimiter = rateLimit({
  */
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    limit: 150,
+    limit: 300,
     message: {
         success: false,
         message: "Too many login or register attempts. Please try again later.",
@@ -102,7 +105,7 @@ const authLimiter = rateLimit({
  */
 const adminLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    limit: 1500,
+    limit: 5000,
     message: {
         success: false,
         message: "Too many admin requests. Please wait a moment and try again.",

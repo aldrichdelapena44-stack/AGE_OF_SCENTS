@@ -2,11 +2,12 @@ import { getAllUsers } from "./auth.service";
 import { getAllOrders, countOrders } from "./order.service";
 import { countProducts, getAdminProducts } from "./product.service";
 import { countNewFeedback, getAllFeedback } from "./feedback.service";
-import { countPendingVerifications, getAllVerifications } from "./verification.service";
+import { countPendingVerifications, getAllVerifications, syncAllUserVerificationStatuses } from "./verification.service";
 import { countPendingStories, getAdminStories } from "./story.service";
 import { getStoreSettings } from "./store-settings.service";
 
 export function getAdminSummary() {
+    syncAllUserVerificationStatuses();
     return {
         users: getAllUsers().length,
         products: countProducts(),
@@ -18,6 +19,7 @@ export function getAdminSummary() {
 }
 
 export function getAdminUsers() {
+    syncAllUserVerificationStatuses();
     return getAllUsers();
 }
 

@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { updateUserVerificationStatus } from "../utils/auth-store";
+import { VerificationState, getUserById, updateUserVerificationStatus } from "../utils/auth-store";
 
 export type VerificationFileStatus = "PENDING_REVIEW" | "KEPT" | "REMOVED";
 
@@ -58,6 +58,9 @@ function deleteLocalFile(fileUrl: string) {
 }
 
 export function submitVerification(input: { userId: number; documentType: string; fileUrl: string }) {
+    const currentUser = getUserById(input.userId);
+    const shouldPreserveApproval = currentUser?.verificationStatus === "APPROVED";
+
     const submission: VerificationRecord = {
         id: nextVerificationId++,
         userId: input.userId,
@@ -65,28 +68,62 @@ export function submitVerification(input: { userId: number; documentType: string
         fileUrl: input.fileUrl,
         originalFileUrl: input.fileUrl,
         fileStatus: "PENDING_REVIEW",
-        status: "PENDING",
+        status: shouldPreserveApproval ? "APPROVED" : "PENDING",
         createdAt: new Date().toISOString()
     };
     submissions.push(submission);
     saveSubmissions();
+    syncUserVerificationStatus(input.userId);
     return submission;
 }
 
 export function getVerificationsByUser(userId: number) {
+    syncUserVerificationStatus(userId);
     return submissions.filter((item) => item.userId === userId);
 }
 
 export function getAllVerifications() {
+    syncAllUserVerificationStatuses();
     return [...submissions].sort((a, b) => b.id - a.id);
+}
+
+export function getEffectiveVerificationStatusForUser(userId: number): VerificationState {
+    const userSubmissions = submissions
+        .filter((item) => item.userId === userId)
+        .sort((a, b) => {
+            const dateDiff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            return dateDiff || b.id - a.id;
+        });
+
+    if (!userSubmissions.length) return "UNVERIFIED";
+
+    // Once a user is approved, preserve that approval unless an admin explicitly rejects
+    // all verification records for that user. This prevents a new upload or page refresh
+    // from accidentally showing APPROVED users as PENDING again.
+    if (userSubmissions.some((item) => item.status === "APPROVED")) return "APPROVED";
+
+    const latestStatus = userSubmissions[0].status;
+    if (latestStatus === "PENDING") return "PENDING";
+    if (latestStatus === "REJECTED") return "REJECTED";
+    return "UNVERIFIED";
+}
+
+export function syncUserVerificationStatus(userId: number) {
+    const effectiveStatus = getEffectiveVerificationStatusForUser(userId);
+    return updateUserVerificationStatus(userId, effectiveStatus);
+}
+
+export function syncAllUserVerificationStatuses() {
+    const userIds = new Set(submissions.map((item) => item.userId));
+    userIds.forEach((userId) => syncUserVerificationStatus(userId));
 }
 
 export function approveVerification(verificationId: number) {
     const record = submissions.find((item) => item.id === verificationId);
     if (!record) return null;
     record.status = "APPROVED";
-    updateUserVerificationStatus(record.userId, "APPROVED");
     saveSubmissions();
+    syncUserVerificationStatus(record.userId);
     return record;
 }
 
@@ -94,8 +131,8 @@ export function rejectVerification(verificationId: number) {
     const record = submissions.find((item) => item.id === verificationId);
     if (!record) return null;
     record.status = "REJECTED";
-    updateUserVerificationStatus(record.userId, "REJECTED");
     saveSubmissions();
+    syncUserVerificationStatus(record.userId);
     return record;
 }
 
