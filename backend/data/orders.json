@@ -1,0 +1,204 @@
+[
+  {
+    "id": 1,
+    "userId": 2,
+    "fullName": "User",
+    "address": "WASRDGJHJESDFG",
+    "gcashNumber": "",
+    "customerGcashNumber": "",
+    "selectedLandmark": "CUSTOM",
+    "customLandmark": "QWASEFTGHJKRDGHFFGFDGFFGHFGXC",
+    "needsLandmarkConfirmation": false,
+    "landmarkStatus": "APPROVED",
+    "paymentMethod": "COD",
+    "items": [
+      {
+        "id": 1,
+        "slug": "aurum-noir-parfum",
+        "name": "Versace Eros",
+        "description": "A long-lasting perfume that offers you a long-term relationship",
+        "price": 209,
+        "stock": 0,
+        "imageUrl": "/uploads/products/1778396805177-6d5c537a-f265-4af3-9bbb-52127698b9a3.jpeg",
+        "quantity": 4
+      }
+    ],
+    "total": 836,
+    "status": "PAYMENT_CONFIRMATION",
+    "chatMessages": [
+      {
+        "id": 1,
+        "senderId": 1,
+        "senderName": "Aldrich",
+        "senderRole": "ADMIN",
+        "message": "SDFTGH",
+        "createdAt": "2026-05-10T09:49:21.154Z"
+      },
+      {
+        "id": 2,
+        "senderId": 2,
+        "senderName": "User",
+        "senderRole": "CUSTOMER",
+        "message": "SDFGJK",
+        "createdAt": "2026-05-10T09:49:50.404Z"
+      }
+    ],
+    "createdAt": "2026-05-10T09:47:47.778Z",
+    "updatedAt": "2026-05-14T10:18:32.396Z",
+    "paymentProvider": "COD",
+    "paymentReference": "AOS-1-MOZLAKSO",
+    "adminConfirmationNote": "3PM TOM",
+    "deliveryNote": ""
+  },
+  {
+    "id": 2,
+    "userId": 1,
+    "fullName": "Aldrich",
+    "address": "Abogado Boarding House",
+    "gcashNumber": "",
+    "customerGcashNumber": "09679836270",
+    "selectedLandmark": "Main Gate / Entrance",
+    "customLandmark": "",
+    "needsLandmarkConfirmation": false,
+    "landmarkStatus": "APPROVED",
+    "paymentMethod": "GCASH",
+    "items": [
+      {
+        "id": 1,
+        "slug": "aurum-noir-parfum",
+        "name": "Aurum Noir Parfum",
+        "description": "A velvet evening fragrance built around black orchid, smoked vanilla, and warm amber.",
+        "price": 3490,
+        "stock": 14,
+        "imageUrl": "/images/products/aurum-noir.svg",
+        "quantity": 1
+      },
+      {
+        "id": 2,
+        "slug": "rose-velours-eau-de-parfum",
+        "name": "Rose Velours Eau de Parfum",
+        "description": "A luminous rose composition softened with lychee, iris, and white musk.",
+        "price": 2890,
+        "stock": 24,
+        "imageUrl": "/images/products/rose-velours.svg",
+        "quantity": 1
+      }
+    ],
+    "total": 6380,
+    "status": "PENDING_CONFIRMATION",
+    "chatMessages": [
+      {
+        "id": 1,
+        "senderId": 1,
+        "senderName": "Aldrich",
+        "senderRole": "CUSTOMER",
+        "message": "Hello",
+        "createdAt": "2026-05-14T00:30:30.562Z"
+      },
+      {
+        "id": 2,
+        "senderId": 1,
+        "senderName": "Aldrich",
+        "senderRole": "CUSTOMER",
+        "message": "Customer rejected the updated delivery transaction.",
+        "createdAt": "2026-05-15T01:15:48.729Z"
+      },
+      {
+        "id": 3,
+        "senderId": 1,
+        "senderName": "Aldrich",
+        "senderRole": "CUSTOMER",
+        "message": "Customer accepted the updated delivery transaction.",
+        "createdAt": "2026-05-15T01:15:50.182Z"
+      }
+    ],
+    "createdAt": "2026-05-14T00:29:56.392Z",
+    "updatedAt": "2026-05-15T01:15:50.182Z",
+    "paymentProvider": "GCASH",
+    "paymentReference": "AOS-2-MP4R4KRV"
+  },
+  {
+    "id": 3,
+    "userId": 1,
+    "fullName": "Aldrich",
+    "address": "Purok 1, Mangkasay, Paracale",
+    "gcashNumber": "",
+    "customerGcashNumber": "",
+    "selectedLandmark": "Main Gate / Entrance",
+    "customLandmark": "",
+    "needsLandmarkConfirmation": true,
+    "landmarkStatus": "PENDING",
+    "paymentMethod": "COD",
+    "items": [
+      {
+        "id": 2,
+        "slug": "rose-velours-eau-de-parfum",
+        "name": "Rose Velours Eau de Parfum",
+        "description": "A luminous rose composition softened with lychee, iris, and white musk.",
+        "price": 2890,
+        "stock": 23,
+        "imageUrl": "/images/products/rose-velours.svg",
+        "quantity": 1
+      }
+    ],
+    "total": 2890,
+    "status": "PAYMENT_CONFIRMATION",
+    "chatMessages": [
+      {
+        "id": 1,
+        "senderId": 1,
+        "senderName": "Aldrich",
+        "senderRole": "CUSTOMER",
+        "message": "Hello po",
+        "createdAt": "2026-05-15T01:15:17.525Z"
+      }
+    ],
+    "createdAt": "2026-05-14T10:16:38.502Z",
+    "updatedAt": "2026-05-15T01:15:17.525Z",
+    "paymentProvider": "COD",
+    "paymentReference": "AOS-3-MP5C32WB",
+    "deliveryNote": ""
+  },
+  {
+    "id": 4,
+    "userId": 3,
+    "fullName": "Aldrich",
+    "address": "S,A,A,A,A",
+    "gcashNumber": "",
+    "customerGcashNumber": "",
+    "selectedLandmark": "Main Gate / Entrance",
+    "customLandmark": "",
+    "needsLandmarkConfirmation": true,
+    "landmarkStatus": "PENDING",
+    "paymentMethod": "GCASH",
+    "items": [
+      {
+        "id": 1,
+        "slug": "aurum-noir-parfum",
+        "name": "Aurum Noir Parfum",
+        "description": "A velvet evening fragrance built around black orchid, smoked vanilla, and warm amber.",
+        "price": 3490,
+        "stock": 13,
+        "imageUrl": "/images/products/aurum-noir.svg",
+        "quantity": 1
+      }
+    ],
+    "total": 3490,
+    "status": "DELIVERED",
+    "chatMessages": [
+      {
+        "id": 1,
+        "senderId": 1,
+        "senderName": "Aldrich",
+        "senderRole": "ADMIN",
+        "message": "😊👍3r45yyiopoi",
+        "createdAt": "2026-05-14T13:25:58.294Z"
+      }
+    ],
+    "createdAt": "2026-05-14T11:46:11.883Z",
+    "updatedAt": "2026-05-14T13:25:58.294Z",
+    "paymentProvider": "GCASH",
+    "paymentReference": "AOS-4-MP5FA90V",
+    "deliveryNote": ""
+  }
+]

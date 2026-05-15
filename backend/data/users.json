@@ -1,0 +1,74 @@
+[
+  {
+    "id": 1,
+    "fullName": "Aldrich",
+    "email": "aldrich@delapena.com",
+    "password": "112258AldrichMarcoPX5MonkeyDluffy_Gear5",
+    "role": "ADMIN",
+    "verificationStatus": "APPROVED",
+    "createdAt": "2026-05-10T09:37:02.512Z"
+  },
+  {
+    "id": 2,
+    "fullName": "User",
+    "email": "user@gmail.com",
+    "password": "Password321",
+    "role": "CUSTOMER",
+    "verificationStatus": "APPROVED",
+    "createdAt": "2026-05-10T09:42:07.086Z"
+  },
+  {
+    "id": 3,
+    "fullName": "Aldrich",
+    "email": "aldrichdelapena213@gmail.com",
+    "password": "ALDRICH213",
+    "role": "CUSTOMER",
+    "verificationStatus": "APPROVED",
+    "createdAt": "2026-05-14T00:25:51.345Z"
+  },
+  {
+    "id": 4,
+    "fullName": "Marco",
+    "email": "aldrich@testo.com",
+    "password": "password123",
+    "role": "CUSTOMER",
+    "verificationStatus": "APPROVED",
+    "createdAt": "2026-05-14T00:45:07.456Z"
+  },
+  {
+    "id": 5,
+    "fullName": "JEFF",
+    "email": "jeff33@gmail.com",
+    "password": "jeff12345",
+    "role": "CUSTOMER",
+    "verificationStatus": "UNVERIFIED",
+    "createdAt": "2026-05-14T00:59:41.040Z"
+  },
+  {
+    "id": 6,
+    "fullName": "Aldrich",
+    "email": "admin@test.com",
+    "password": "admin12345",
+    "role": "CUSTOMER",
+    "verificationStatus": "UNVERIFIED",
+    "createdAt": "2026-05-14T13:39:04.215Z"
+  },
+  {
+    "id": 7,
+    "fullName": "Aldrich",
+    "email": "a@gmail.com",
+    "password": "1414aewrty",
+    "role": "CUSTOMER",
+    "verificationStatus": "UNVERIFIED",
+    "createdAt": "2026-05-14T13:42:13.513Z"
+  },
+  {
+    "id": 8,
+    "fullName": "Marco",
+    "email": "aldrichdelapena2132@gmail.com",
+    "password": "Password123",
+    "role": "CUSTOMER",
+    "verificationStatus": "UNVERIFIED",
+    "createdAt": "2026-05-14T13:55:33.752Z"
+  }
+]

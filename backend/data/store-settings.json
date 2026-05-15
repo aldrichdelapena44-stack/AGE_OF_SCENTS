@@ -1,0 +1,22 @@
+{
+  "gcashNumber": "09679836270",
+  "gcashQrUrl": "/uploads/settings/1778808530319-260decbe-4a3a-400e-92c0-76c2b223e3a6-1.jpeg",
+  "gcashInstructions": "Scan the QR code or send payment to the GCash number, then submit your order for admin confirmation.",
+  "codInstructions": "Cash on Delivery is available only for approved delivery landmarks. Custom landmarks need admin confirmation.",
+  "adminDeliveryAddress": "Daet, Camarines Norte",
+  "deliveryLandmarks": [
+    {
+      "id": 1,
+      "name": "Camarines Norte State College (Main Campus)",
+      "details": "Infornt of the Main Campus",
+      "isActive": true
+    },
+    {
+      "id": 2,
+      "name": "Provincial Capitol, Daet Camarines Norte",
+      "details": "Infront of the Main gate Capitol",
+      "isActive": true
+    }
+  ],
+  "updatedAt": "2026-05-15T01:35:18.364Z"
+}

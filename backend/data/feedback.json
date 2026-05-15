@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "name": "Aldrich",
+    "email": "aldrich@delapena.com",
+    "rating": 5,
+    "message": "cramming na boi",
+    "status": "NEW",
+    "createdAt": "2026-05-10T09:37:18.501Z"
+  },
+  {
+    "id": 2,
+    "name": "Aldrich",
+    "email": "aldrich@delapena.com",
+    "rating": 5,
+    "message": "asdfg",
+    "status": "NEW",
+    "createdAt": "2026-05-15T00:55:58.913Z"
+  }
+]

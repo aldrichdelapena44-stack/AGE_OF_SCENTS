@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "userId": 2,
+    "documentType": "NATIONAL_ID",
+    "fileUrl": "/uploads/ids/1778406303376-Awards5.jpeg",
+    "originalFileUrl": "/uploads/ids/1778406303376-Awards5.jpeg",
+    "fileStatus": "PENDING_REVIEW",
+    "status": "APPROVED",
+    "createdAt": "2026-05-10T09:45:03.390Z"
+  },
+  {
+    "id": 2,
+    "userId": 3,
+    "documentType": "OTHER",
+    "fileUrl": "/uploads/ids/1778718395278-7e802266-b0e4-4de4-b5ac-f73742c048a1.jpeg",
+    "originalFileUrl": "/uploads/ids/1778718395278-7e802266-b0e4-4de4-b5ac-f73742c048a1.jpeg",
+    "fileStatus": "PENDING_REVIEW",
+    "status": "APPROVED",
+    "createdAt": "2026-05-14T00:26:35.292Z"
+  },
+  {
+    "id": 3,
+    "userId": 4,
+    "documentType": "DRIVERS_LICENSE",
+    "fileUrl": "/uploads/ids/1778767374195-4544f120-e0a7-4a7e-8d6a-fb31a8424b76.jpeg",
+    "originalFileUrl": "/uploads/ids/1778767374195-4544f120-e0a7-4a7e-8d6a-fb31a8424b76.jpeg",
+    "fileStatus": "PENDING_REVIEW",
+    "status": "APPROVED",
+    "createdAt": "2026-05-14T14:02:54.208Z"
+  }
+]
