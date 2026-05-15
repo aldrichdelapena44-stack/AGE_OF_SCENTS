@@ -23,8 +23,15 @@ export const app = express();
 const allowedOrigins = [
     process.env.CORS_ORIGIN,
     process.env.FRONTEND_URL,
+
+    // Production frontend
+    "https://age-of-scents-six.vercel.app",
+
+    // Previous / test frontend links
     "https://largefile-iota.vercel.app",
     "https://age-of-scent-perfume.vercel.app",
+
+    // Local development
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:3001",
@@ -58,17 +65,65 @@ const corsOptions: cors.CorsOptions = {
 
 app.use(cors(corsOptions));
 
-app.use(
-    rateLimit({
-        windowMs: 15 * 60 * 1000,
-        limit: 200,
-    })
-);
+/**
+ * General site/API limiter.
+ * This allows normal browsing, products, cart, orders, stories, feedback,
+ * notifications, and admin panels without blocking too quickly.
+ */
+const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 3000,
+    message: {
+        success: false,
+        message: "Too many requests, please wait a moment and try again.",
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+/**
+ * Login/register limiter.
+ * This is stricter to protect accounts, but still reasonable for testing.
+ */
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 150,
+    message: {
+        success: false,
+        message: "Too many login or register attempts. Please try again later.",
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+/**
+ * Admin limiter.
+ * Admin pages can make many requests, so this is higher than auth.
+ */
+const adminLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 1500,
+    message: {
+        success: false,
+        message: "Too many admin requests. Please wait a moment and try again.",
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+app.use(generalLimiter);
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+
+app.get("/", (_req, res) => {
+    res.json({
+        success: true,
+        message: "AGE OF SCENT backend API is running.",
+    });
+});
 
 app.get("/api/health", (_req, res) => {
     res.json({
@@ -78,7 +133,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 // Canonical API routes used by the frontend.
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/products", productRoutes);
@@ -88,14 +143,12 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/verifications", verificationRoutes);
-app.use("/api/admin", adminRoutes);
+app.use("/api/admin", adminLimiter, adminRoutes);
 app.use("/api/webhooks", webhookRoutes);
 
 // Localhost compatibility aliases.
-// These keep the app working even if an older frontend bundle or .env value
-// calls /api/login, /api/register, /login, /register, /feedback, etc.
-app.use("/api", authRoutes);
-app.use("/auth", authRoutes);
+app.use("/api", authLimiter, authRoutes);
+app.use("/auth", authLimiter, authRoutes);
 app.use("/contact", contactRoutes);
 app.use("/feedback", feedbackRoutes);
 app.use("/products", productRoutes);
@@ -105,9 +158,9 @@ app.use("/orders", orderRoutes);
 app.use("/payments", paymentRoutes);
 app.use("/users", userRoutes);
 app.use("/verifications", verificationRoutes);
-app.use("/admin", adminRoutes);
+app.use("/admin", adminLimiter, adminRoutes);
 app.use("/webhooks", webhookRoutes);
-app.use("/", authRoutes);
+app.use("/", authLimiter, authRoutes);
 
 app.use((_req, res) => {
     res.status(404).json({
