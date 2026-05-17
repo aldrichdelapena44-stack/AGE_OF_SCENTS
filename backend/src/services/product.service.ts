@@ -1,6 +1,8 @@
 import fs from "fs";
 import path from "path";
 
+export type ProductCategory = "Men" | "Women" | "Unisex";
+
 export type ProductRecord = {
     id: number;
     slug: string;
@@ -13,6 +15,7 @@ export type ProductRecord = {
     stock: number;
     imageUrl: string;
     isActive: boolean;
+    category: ProductCategory;
     updatedAt: string;
 };
 
@@ -24,12 +27,24 @@ export type ProductUpdateInput = {
     stock?: number;
     imageUrl?: string;
     volume?: string;
+    mood?: string;
     isActive?: boolean;
+    category?: ProductCategory | string;
 };
 
 const now = new Date().toISOString();
 const dataDir = path.join(process.cwd(), "data");
 const productDataFile = path.join(dataDir, "products.json");
+
+function normalizeCategory(value?: string): ProductCategory {
+    const clean = value?.trim().toLowerCase();
+
+    if (clean === "men") return "Men";
+    if (clean === "women") return "Women";
+    if (clean === "unisex") return "Unisex";
+
+    return "Unisex";
+}
 
 const defaultProducts: ProductRecord[] = [
     {
@@ -45,6 +60,7 @@ const defaultProducts: ProductRecord[] = [
         stock: 18,
         imageUrl: "/images/products/aurum-noir.svg",
         isActive: true,
+        category: "Unisex",
         updatedAt: now
     },
     {
@@ -60,6 +76,7 @@ const defaultProducts: ProductRecord[] = [
         stock: 24,
         imageUrl: "/images/products/rose-velours.svg",
         isActive: true,
+        category: "Women",
         updatedAt: now
     },
     {
@@ -75,6 +92,7 @@ const defaultProducts: ProductRecord[] = [
         stock: 30,
         imageUrl: "/images/products/citrus-atelier.svg",
         isActive: true,
+        category: "Unisex",
         updatedAt: now
     },
     {
@@ -90,6 +108,7 @@ const defaultProducts: ProductRecord[] = [
         stock: 12,
         imageUrl: "/images/products/oud-imperial.svg",
         isActive: true,
+        category: "Men",
         updatedAt: now
     },
     {
@@ -105,6 +124,7 @@ const defaultProducts: ProductRecord[] = [
         stock: 21,
         imageUrl: "/images/products/pearl-musk.svg",
         isActive: true,
+        category: "Women",
         updatedAt: now
     },
     {
@@ -120,6 +140,7 @@ const defaultProducts: ProductRecord[] = [
         stock: 16,
         imageUrl: "/images/products/amber-silk.svg",
         isActive: true,
+        category: "Unisex",
         updatedAt: now
     }
 ];
@@ -131,8 +152,23 @@ function ensureDataDir() {
 function loadProducts() {
     try {
         if (!fs.existsSync(productDataFile)) return [...defaultProducts];
-        const parsed = JSON.parse(fs.readFileSync(productDataFile, "utf8")) as ProductRecord[];
-        return Array.isArray(parsed) && parsed.length > 0 ? parsed : [...defaultProducts];
+
+        const parsed = JSON.parse(fs.readFileSync(productDataFile, "utf8")) as Partial<ProductRecord>[];
+
+        if (!Array.isArray(parsed) || parsed.length === 0) {
+            return [...defaultProducts];
+        }
+
+        return parsed.map((product, index) => {
+            const fallback = defaultProducts[index] || defaultProducts[0];
+
+            return {
+                ...fallback,
+                ...product,
+                category: normalizeCategory(product.category),
+                updatedAt: product.updatedAt || now
+            } as ProductRecord;
+        });
     } catch {
         return [...defaultProducts];
     }
@@ -175,6 +211,11 @@ export function updateProduct(productId: number, input: ProductUpdateInput) {
     if (typeof input.scentNotes === "string") product.scentNotes = sanitizeText(input.scentNotes, product.scentNotes);
     if (typeof input.imageUrl === "string") product.imageUrl = sanitizeText(input.imageUrl, product.imageUrl);
     if (typeof input.volume === "string") product.volume = sanitizeText(input.volume, product.volume);
+    if (typeof input.mood === "string") product.mood = sanitizeText(input.mood, product.mood);
+
+    if (typeof input.category === "string") {
+        product.category = normalizeCategory(input.category);
+    }
 
     if (typeof input.price !== "undefined") {
         const price = Number(input.price);
@@ -205,15 +246,19 @@ export function countProducts() {
 
 export function decreaseProductStock(productId: number, quantity: number) {
     const product = getProductById(productId);
+
     if (!product || !product.isActive) {
         throw new Error(`Product ${productId} was not found.`);
     }
+
     if (!Number.isInteger(quantity) || quantity <= 0) {
         throw new Error("Quantity must be a positive whole number.");
     }
+
     if (product.stock < quantity) {
         throw new Error(`${product.name} only has ${product.stock} item(s) left in stock.`);
     }
+
     product.stock -= quantity;
     product.updatedAt = new Date().toISOString();
     saveProducts();
