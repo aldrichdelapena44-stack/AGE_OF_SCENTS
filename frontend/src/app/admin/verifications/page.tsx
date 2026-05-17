@@ -87,6 +87,22 @@ export default function AdminVerificationsPage() {
         }
     }
 
+    async function handleDeleteSubmission(id: number) {
+        const confirmDelete = window.confirm("Delete this verification submission permanently from admin records?");
+        if (!confirmDelete) return;
+
+        try {
+            setLoadingId(id);
+            const response = await api.delete<{ success: boolean; message: string; data: VerificationRecord }>(`/admin/verifications/${id}`);
+            setRecords((current) => current.filter((record) => record.id !== id));
+            setMessage(response.message || "Verification submission deleted permanently.");
+        } catch (error) {
+            setMessage(error instanceof Error ? error.message : "Unable to delete submission.");
+        } finally {
+            setLoadingId(null);
+        }
+    }
+
     return (
         <PageShell
             title="Admin Verifications"
@@ -191,6 +207,15 @@ export default function AdminVerificationsPage() {
                                             onClick={() => handleRemoveFile(record.id)}
                                         >
                                             Remove File
+                                        </button>
+
+                                        <button
+                                            className="btn btn--small btn--ghost btn--danger"
+                                            type="button"
+                                            disabled={loadingId === record.id}
+                                            onClick={() => handleDeleteSubmission(record.id)}
+                                        >
+                                            Delete Submission
                                         </button>
                                     </div>
                                 </div>

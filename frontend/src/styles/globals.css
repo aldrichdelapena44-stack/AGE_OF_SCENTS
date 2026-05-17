@@ -5050,3 +5050,170 @@ body:has(#story) .product-grid--cinematic {
         padding: 1rem;
     }
 }
+
+/* Final mobile/admin reliability patch */
+.order-admin-card.is-fading-out,
+.payment-table tr.is-fading-out {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+    transition: opacity 220ms ease, transform 220ms ease;
+    pointer-events: none;
+}
+
+.order-admin-card__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.btn--danger,
+.notification-action-button--danger {
+    border-color: rgba(255, 99, 99, 0.55) !important;
+    color: #ffb4b4 !important;
+}
+
+@media (max-width: 760px) {
+    .cinematic-hero {
+        min-height: calc(100svh - 76px) !important;
+        padding: 0.85rem 0.85rem 3.1rem !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    .cinematic-hero__content--carousel {
+        width: 100% !important;
+        min-height: auto !important;
+        padding: 0 !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .cinematic-hero__copy,
+    .hero-copy-window {
+        width: min(100%, 22rem) !important;
+        max-width: 22rem !important;
+        min-height: 0 !important;
+        margin: 0 auto !important;
+        border-radius: 1.45rem !important;
+        overflow: hidden !important;
+    }
+
+    .hero-copy-window__titlebar,
+    .window-titlebar {
+        padding: 0.55rem 0.8rem !important;
+        min-height: auto !important;
+    }
+
+    .hero-copy-window__body {
+        padding: 1rem 1rem 1.1rem !important;
+    }
+
+    .cinematic-hero h1,
+    .hero-copy-window h1 {
+        font-size: clamp(2.45rem, 15vw, 4.2rem) !important;
+        line-height: 0.9 !important;
+        letter-spacing: -0.065em !important;
+        margin-bottom: 0.75rem !important;
+    }
+
+    .hero-lede {
+        font-size: 0.98rem !important;
+        line-height: 1.45 !important;
+        margin-bottom: 0.85rem !important;
+    }
+
+    .hero-actions {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 0.55rem !important;
+    }
+
+    .hero-actions .btn {
+        width: 100% !important;
+        min-height: 3rem !important;
+        padding: 0.85rem 1rem !important;
+        justify-content: center !important;
+    }
+
+    .hero-mobile-product-preview {
+        display: none !important;
+    }
+
+    .hero-dots {
+        bottom: 2.25rem !important;
+    }
+
+    .scroll-cue {
+        bottom: 0.65rem !important;
+        font-size: 0.62rem !important;
+    }
+
+    .hero-arrow {
+        width: 2.7rem !important;
+        height: 2.7rem !important;
+        opacity: 0.72 !important;
+    }
+
+    .hero-arrow--prev { left: 0.55rem !important; }
+    .hero-arrow--next { right: 0.55rem !important; }
+
+    .order-admin-card__head,
+    .order-admin-card__actions,
+    .payment-report-head {
+        align-items: stretch !important;
+        flex-direction: column !important;
+        gap: 0.85rem !important;
+    }
+
+    .order-admin-card__actions .btn,
+    .status-button-row .btn,
+    .button-row .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        text-align: center !important;
+    }
+
+    .payment-table-wrap {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    .payment-table {
+        min-width: 760px !important;
+    }
+
+    .admin-row-card,
+    .verification-card,
+    .payment-report-card,
+    .order-admin-card {
+        padding: 1rem !important;
+        border-radius: 1.4rem !important;
+    }
+
+    .upload-field,
+    .upload-field--story,
+    .form-card input,
+    .form-card select,
+    .form-card textarea {
+        max-width: 100% !important;
+    }
+}
+
+@media (max-width: 420px) {
+    .cinematic-hero__copy,
+    .hero-copy-window {
+        width: min(100%, 20.5rem) !important;
+        max-width: 20.5rem !important;
+    }
+
+    .hero-copy-window__body {
+        padding: 0.9rem !important;
+    }
+
+    .cinematic-hero h1,
+    .hero-copy-window h1 {
+        font-size: clamp(2.1rem, 13.5vw, 3.5rem) !important;
+    }
+}

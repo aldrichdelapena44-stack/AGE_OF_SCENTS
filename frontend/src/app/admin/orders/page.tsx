@@ -66,6 +66,7 @@ export default function AdminOrdersPage() {
     const [paymentSearch, setPaymentSearch] = useState("");
     const [chatTheme, setChatTheme] = useState("gold");
     const [saving, setSaving] = useState(false);
+    const [deletingIds, setDeletingIds] = useState<number[]>([]);
 
     async function loadOrders() {
         try {
@@ -129,6 +130,25 @@ export default function AdminOrdersPage() {
         reader.readAsDataURL(file);
     }
 
+
+    async function deleteOrder(orderId: number) {
+        const confirmDelete = window.confirm("Delete this order from the admin website? The customer will be notified that the transaction is not eligible to pay.");
+        if (!confirmDelete) return;
+
+        try {
+            setDeletingIds((current) => current.includes(orderId) ? current : [...current, orderId]);
+            const response = await api.delete<{ success: boolean; message: string; data: AdminOrder }>(`/admin/orders/${orderId}`);
+            setMessage(response.message || "Order deleted. The customer was notified.");
+            window.setTimeout(() => {
+                setOrders((current) => current.filter((order) => order.id !== orderId));
+                setDeletingIds((current) => current.filter((id) => id !== orderId));
+            }, 260);
+        } catch (error) {
+            setDeletingIds((current) => current.filter((id) => id !== orderId));
+            setMessage(error instanceof Error ? error.message : "Order delete failed.");
+        }
+    }
+
     async function sendMessage(event: FormEvent<HTMLFormElement>, orderId: number) {
         event.preventDefault();
         const draft = (chatDrafts[orderId] || "").trim();
@@ -155,7 +175,7 @@ export default function AdminOrdersPage() {
                         <div>
                             <p className="eyebrow">Payment Reports</p>
                             <h2>All customer payment records</h2>
-                            <p className="muted">Search by client, product, method, reference, status, or date. Delete hides the record from this admin view only.</p>
+                            <p className="muted">Search by client, product, method, reference, status, or date. Delete permanently hides the record from this admin view and notifies the customer.</p>
                         </div>
                         <div className="form-group search-field">
                             <label htmlFor="admin-payment-search">Search payments</label>
@@ -177,7 +197,7 @@ export default function AdminOrdersPage() {
                                         <td>{order.paymentReference || order.customerGcashNumber || "N/A"}</td>
                                         <td>PHP {Number(order.total).toFixed(2)}</td>
                                         <td>{order.status}</td>
-                                        <td><button className="btn btn--small btn--ghost" type="button" onClick={() => setHiddenPaymentIds((current) => [...current, order.id])}>Delete</button></td>
+                                        <td><button className="btn btn--small btn--ghost" type="button" disabled={deletingIds.includes(order.id)} onClick={() => deleteOrder(order.id)}>{deletingIds.includes(order.id) ? "Deleting..." : "Delete"}</button></td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -195,14 +215,19 @@ export default function AdminOrdersPage() {
 
                 <div className="grid order-admin-grid">
                     {orders.map((order) => (
-                        <article className="card order-admin-card" key={order.id}>
+                        <article className={`card order-admin-card ${deletingIds.includes(order.id) ? "is-fading-out" : ""}`} key={order.id}>
                             <div className="order-admin-card__head">
                                 <div>
                                     <p className="eyebrow">Order #{order.id}</p>
                                     <h3>{order.fullName}</h3>
                                     <p className="muted">{formatDateTime(order.createdAt)}</p>
                                 </div>
-                                <span className="status-badge status-pending">{order.status}</span>
+                                <div className="order-admin-card__actions">
+                                    <span className="status-badge status-pending">{order.status}</span>
+                                    <button className="btn btn--small btn--ghost" type="button" disabled={deletingIds.includes(order.id)} onClick={() => deleteOrder(order.id)}>
+                                        {deletingIds.includes(order.id) ? "Deleting..." : "Delete Order"}
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="grid grid--2">
