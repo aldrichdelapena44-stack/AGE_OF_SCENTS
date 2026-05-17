@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { applySiteTheme, getStoredSiteTheme, storeSiteTheme, type SiteTheme } from "@/lib/site-preferences";
 
 const themes: { value: SiteTheme; label: string }[] = [
@@ -11,6 +11,7 @@ const themes: { value: SiteTheme; label: string }[] = [
 export default function SiteSettingsPanel() {
     const [open, setOpen] = useState(false);
     const [theme, setTheme] = useState<SiteTheme>("dark");
+    const panelRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         const stored = getStoredSiteTheme();
@@ -26,13 +27,31 @@ export default function SiteSettingsPanel() {
         return () => window.removeEventListener("site-theme-updated", sync);
     }, []);
 
+    useEffect(() => {
+        if (!open) return;
+
+        function handlePointerDown(event: MouseEvent | TouchEvent) {
+            const target = event.target as Node | null;
+            if (target && panelRef.current && !panelRef.current.contains(target)) {
+                setOpen(false);
+            }
+        }
+
+        document.addEventListener("mousedown", handlePointerDown);
+        document.addEventListener("touchstart", handlePointerDown);
+        return () => {
+            document.removeEventListener("mousedown", handlePointerDown);
+            document.removeEventListener("touchstart", handlePointerDown);
+        };
+    }, [open]);
+
     function chooseTheme(nextTheme: SiteTheme) {
         setTheme(nextTheme);
         storeSiteTheme(nextTheme);
     }
 
     return (
-        <div className="settings-widget">
+        <div className="settings-widget" ref={panelRef}>
             <button className="icon-button" type="button" onClick={() => setOpen((current) => !current)} aria-label="Open website settings">
                 ⚙
             </button>

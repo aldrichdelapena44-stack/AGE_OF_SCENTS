@@ -82,7 +82,8 @@ export default function AdminSettingsPage() {
             setSaving(true);
             const response = await api.put<{ success: boolean; message: string; data: StoreSettings }>("/admin/settings", settings);
             setSettings(response.data);
-            setMessage(response.message || "Settings saved.");
+            setMessage(response.message || "Settings saved. Checkout will use the new shipping fees after refresh.");
+            window.dispatchEvent(new CustomEvent("checkout-settings-updated"));
         } catch (error) {
             setMessage(error instanceof Error ? error.message : "Settings update failed.");
         } finally {

@@ -83,11 +83,15 @@ export default function CheckoutPage() {
         async function loadSettings() {
             try {
                 const response = await api.get<{ success: boolean; message: string; data: CheckoutSettings }>(
-                    "/settings/checkout"
+                    `/settings/checkout?fresh=${Date.now()}`
                 );
-                setSettings(response.data);
-                const first = response.data.deliveryLandmarks?.[0];
-                if (first) setSelectedLandmark(first.name);
+                const activeLandmarks = (response.data.deliveryLandmarks || []).filter((landmark) => landmark.isActive !== false);
+                const nextSettings = { ...response.data, deliveryLandmarks: activeLandmarks };
+                setSettings(nextSettings);
+                setSelectedLandmark((current) => {
+                    if (current && activeLandmarks.some((landmark) => landmark.name === current)) return current;
+                    return activeLandmarks[0]?.name || "CUSTOM";
+                });
             } catch {
                 setSettings(null);
             }
@@ -95,6 +99,17 @@ export default function CheckoutPage() {
 
         refreshCurrentUser();
         loadSettings();
+
+        function refreshWhenVisible() {
+            if (document.visibilityState === "visible") loadSettings();
+        }
+
+        window.addEventListener("focus", loadSettings);
+        document.addEventListener("visibilitychange", refreshWhenVisible);
+        return () => {
+            window.removeEventListener("focus", loadSettings);
+            document.removeEventListener("visibilitychange", refreshWhenVisible);
+        };
     }, []);
 
     const subtotal = useMemo(

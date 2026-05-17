@@ -33,7 +33,7 @@ function resolveProductImageUrl(imageUrl?: string) {
         return cleanImageUrl;
     }
 
-    if (cleanImageUrl.startsWith("/uploads/")) return mediaUrl(cleanImageUrl);
+    if (cleanImageUrl.startsWith("/uploads/")) return mediaUrl(cleanImageUrl, true);
 
     if (productImageMap[cleanImageUrl]) return productImageMap[cleanImageUrl];
 

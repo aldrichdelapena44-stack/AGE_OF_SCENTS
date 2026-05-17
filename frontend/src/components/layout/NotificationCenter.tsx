@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { getAuthUser, isLoggedIn } from "@/lib/auth";
@@ -110,6 +110,7 @@ export default function NotificationCenter() {
     const [role, setRole] = useState("CUSTOMER");
     const [pinnedIds, setPinnedIds] = useState<string[]>([]);
     const [deletedIds, setDeletedIds] = useState<string[]>([]);
+    const panelRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         setPinnedIds(readStoredIds(PINNED_KEY));
@@ -253,6 +254,24 @@ export default function NotificationCenter() {
         };
     }, []);
 
+    useEffect(() => {
+        if (!open) return;
+
+        function handlePointerDown(event: MouseEvent | TouchEvent) {
+            const target = event.target as Node | null;
+            if (target && panelRef.current && !panelRef.current.contains(target)) {
+                setOpen(false);
+            }
+        }
+
+        document.addEventListener("mousedown", handlePointerDown);
+        document.addEventListener("touchstart", handlePointerDown);
+        return () => {
+            document.removeEventListener("mousedown", handlePointerDown);
+            document.removeEventListener("touchstart", handlePointerDown);
+        };
+    }, [open]);
+
     const visibleItems = useMemo(() => {
         return items
             .filter((item) => item.audience === "ALL" || item.audience === role)
@@ -300,7 +319,7 @@ export default function NotificationCenter() {
     }
 
     return (
-        <div className="notification-center">
+        <div className="notification-center" ref={panelRef}>
             <button className="notification-button" type="button" onClick={openPanel} aria-label="Open notifications">
                 <span aria-hidden="true">🔔</span>
                 {unreadCount > 0 ? <span className="notification-count">{unreadCount}</span> : null}

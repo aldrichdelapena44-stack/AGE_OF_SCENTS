@@ -4,9 +4,19 @@ import SiteHeader from "@/components/layout/SiteHeader";
 import SiteFooter from "@/components/layout/SiteFooter";
 
 export const metadata: Metadata = {
-    title: "AGE OF SCENT | Luxury Perfume Boutique",
-    description:
-        "A cinematic luxury perfume e-commerce experience with parallax storytelling, premium product browsing, cart, checkout, and admin-preserved backend integration."
+    title: "AGE OF SCENT",
+    description: "",
+    openGraph: {
+        title: "AGE OF SCENT",
+        description: "",
+        siteName: "AGE OF SCENT",
+        type: "website"
+    },
+    twitter: {
+        card: "summary",
+        title: "AGE OF SCENT",
+        description: ""
+    }
 };
 
 export default function RootLayout({

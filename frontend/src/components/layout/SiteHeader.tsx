@@ -115,7 +115,10 @@ export default function SiteHeader() {
         <header className={`site-header ${scrolled ? "site-header--scrolled" : ""} ${hideMobileHeader ? "site-header--mobile-hidden" : ""}`}>
             <div className="site-header__inner">
                 <Link href="/" className="brand" aria-label="AGE OF SCENT Home">
-                    <span className="brand__mark">AS</span>
+                    <span className="brand__mark brand__mark--logo">
+                        <img src="/logo.png" alt="" aria-hidden="true" onError={(event) => { event.currentTarget.style.display = "none"; }} />
+                        <span>AS</span>
+                    </span>
                     <span>AGE OF SCENT</span>
                 </Link>
 

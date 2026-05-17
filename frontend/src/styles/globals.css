@@ -4692,3 +4692,361 @@ body:has(#story) .product-grid--cinematic {
     }
 }
 
+
+
+/* AGE OF SCENT requested production fixes: mobile hero, readable light mode, outside-click panels, logos, admin controls */
+.brand__mark--logo {
+    position: relative;
+    overflow: hidden;
+    background: rgba(215, 180, 106, 0.08);
+}
+
+.brand__mark--logo img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    z-index: 2;
+}
+
+.brand__mark--logo span {
+    position: relative;
+    z-index: 1;
+}
+
+.cinematic-hero {
+    min-height: calc(100svh - 78px);
+    display: grid;
+    align-items: center;
+    padding-block: clamp(22px, 3.5vw, 48px) clamp(50px, 7vw, 86px);
+}
+
+.cinematic-hero__content--carousel {
+    min-height: 0;
+    align-items: center;
+}
+
+.hero-copy-window {
+    width: min(56rem, 64vw);
+    max-height: min(72svh, 720px);
+    overflow: hidden;
+}
+
+.hero-copy-window__titlebar {
+    pointer-events: none;
+}
+
+.hero-copy-window__body {
+    padding: clamp(1.35rem, 3vw, 3.2rem);
+}
+
+.cinematic-hero h1 {
+    font-size: clamp(3.1rem, 8.3vw, 6.8rem);
+    line-height: 0.92;
+}
+
+.hero-lede {
+    max-width: 42rem;
+}
+
+.hero-carousel__slide {
+    object-fit: contain;
+    object-position: right center;
+    background: #050403;
+}
+
+.scroll-cue {
+    bottom: clamp(12px, 2.4vh, 28px);
+}
+
+.product-visual__image,
+.product-visual--details .product-visual__image,
+.product-visual--admin .product-visual__image {
+    object-fit: contain;
+    object-position: center;
+}
+
+.product-visual--details,
+.product-visual--admin {
+    min-height: 320px;
+}
+
+.story-share-strip .client-story-row:first-of-type {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 280px));
+    align-items: start;
+}
+
+.client-story {
+    width: 100%;
+    max-width: 280px;
+}
+
+.client-story img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+}
+
+.settings-widget,
+.notification-center {
+    position: relative;
+}
+
+.notification-panel,
+.settings-popover {
+    overflow: auto;
+    max-height: min(78svh, 620px);
+}
+
+.notification-actions {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.notification-action-button {
+    border: 1px solid rgba(215, 180, 106, 0.32);
+    border-radius: 999px;
+    background: rgba(215, 180, 106, 0.12);
+    color: var(--text);
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0.32rem 0.55rem;
+    cursor: pointer;
+}
+
+.notification-action-button--danger {
+    border-color: rgba(255, 127, 127, 0.34);
+}
+
+.admin-product-grid {
+    grid-template-columns: 1fr;
+}
+
+.admin-product-card {
+    overflow: hidden;
+}
+
+.admin-product-image-control {
+    align-items: stretch;
+}
+
+.admin-product-image-control__panel {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.upload-field--admin-product {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
+    min-height: 58px;
+    padding: 0.45rem;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: rgba(10, 8, 7, 0.76);
+    overflow: hidden;
+}
+
+.upload-field--admin-product .upload-field__button {
+    flex: 0 0 auto;
+    padding: 0.8rem 1.15rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #ffe18c, #d19534);
+    color: #130d07;
+    font-weight: 900;
+    text-align: center;
+}
+
+.upload-field--admin-product .upload-field__name {
+    min-width: 0;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.upload-field--admin-product input[type="file"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+[data-theme="light"] .story-step,
+[data-theme="light"] .client-story,
+[data-theme="light"] .product-card,
+[data-theme="light"] .card,
+[data-theme="light"] .form-card,
+[data-theme="light"] .settings-popover,
+[data-theme="light"] .notification-panel {
+    background: linear-gradient(145deg, rgba(255, 252, 244, 0.98), rgba(246, 228, 198, 0.92));
+    color: #211309;
+    border-color: rgba(150, 103, 34, 0.24);
+}
+
+[data-theme="light"] .story-step h3,
+[data-theme="light"] .story-step p,
+[data-theme="light"] .client-story strong,
+[data-theme="light"] .client-story p,
+[data-theme="light"] .product-card h3,
+[data-theme="light"] .product-card p,
+[data-theme="light"] .admin-product-card h3,
+[data-theme="light"] .form-card p,
+[data-theme="light"] label,
+[data-theme="light"] .field-hint,
+[data-theme="light"] .muted {
+    color: #2b1b0f !important;
+}
+
+[data-theme="light"] input,
+[data-theme="light"] textarea,
+[data-theme="light"] select {
+    background: rgba(255, 255, 255, 0.96) !important;
+    color: #1d1209 !important;
+    border-color: rgba(134, 94, 42, 0.28) !important;
+}
+
+[data-theme="light"] .upload-field--admin-product {
+    background: rgba(255, 255, 255, 0.72);
+}
+
+@media (max-width: 860px) {
+    .admin-product-card__heading,
+    .admin-product-image-control,
+    .admin-edit-form .grid,
+    .landmark-editor .grid,
+    .category-create-form,
+    .button-row {
+        grid-template-columns: 1fr !important;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .admin-product-card__heading .status-badge,
+    .button-row .btn,
+    .admin-product-image-control__panel .btn {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+    }
+}
+
+@media (max-width: 740px) {
+    .cinematic-hero {
+        min-height: calc(100svh - 68px);
+        padding: 12px 0 46px;
+        overflow: hidden;
+    }
+
+    .cinematic-hero__content--carousel {
+        width: min(100% - 18px, 430px);
+        margin-inline: auto;
+        justify-content: center;
+    }
+
+    .hero-copy-window {
+        width: 100%;
+        max-height: 58svh;
+        border-radius: 22px;
+    }
+
+    .hero-copy-window__body {
+        padding: 1.15rem 1.15rem 1.25rem;
+    }
+
+    .cinematic-hero h1 {
+        font-size: clamp(2.35rem, 15.5vw, 4.25rem);
+        line-height: 0.92;
+    }
+
+    .hero-lede {
+        font-size: 0.92rem;
+        line-height: 1.55;
+        margin-top: 0.9rem;
+    }
+
+    .hero-actions {
+        gap: 0.6rem;
+    }
+
+    .hero-actions .btn {
+        min-height: 44px;
+        padding: 0.72rem 0.95rem;
+        font-size: 0.72rem;
+    }
+
+    .hero-carousel__slide {
+        object-fit: contain;
+        object-position: right bottom;
+        opacity: 0.78;
+    }
+
+    .hero-dots {
+        bottom: 58px;
+    }
+
+    .scroll-cue {
+        display: flex;
+        bottom: 12px;
+        font-size: 0.64rem;
+    }
+
+    .window-titlebar {
+        min-height: 34px;
+        padding: 0.55rem 0.8rem;
+    }
+
+    .window-controls {
+        display: none !important;
+    }
+
+    .story-share-strip .client-story-row:first-of-type {
+        grid-template-columns: 1fr;
+    }
+
+    .client-story {
+        max-width: 100%;
+    }
+
+    .upload-field--admin-product {
+        display: grid;
+        grid-template-columns: 1fr;
+        padding: 0.55rem;
+    }
+
+    .upload-field--admin-product .upload-field__button,
+    .upload-field--admin-product .upload-field__name {
+        width: 100%;
+        text-align: center;
+    }
+
+    .admin-image-path {
+        font-size: 0.82rem;
+        line-height: 1.35;
+    }
+
+    .site-footer .brand,
+    .footer-brand {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 430px) {
+    .hero-copy-window {
+        max-height: 56svh;
+    }
+
+    .cinematic-hero h1 {
+        font-size: clamp(2.15rem, 14.2vw, 3.55rem);
+    }
+
+    .hero-copy-window__body {
+        padding: 1rem;
+    }
+}

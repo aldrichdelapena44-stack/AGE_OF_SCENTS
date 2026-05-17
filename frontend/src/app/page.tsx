@@ -61,10 +61,6 @@ const storySteps = [
 export default function HomePage() {
   const [scrollY, setScrollY] = useState(0);
   const [heroSlideIndex, setHeroSlideIndex] = useState(0);
-  const [heroCopyWindowState, setHeroCopyWindowState] = useState<
-      "open" | "minimized" | "closed"
-  >("open");
-
   const carouselPauseUntilRef = useRef(0);
   const carouselResumeTimerRef = useRef<number | null>(null);
 
@@ -423,7 +419,7 @@ export default function HomePage() {
 
           <div className="cinematic-hero__content cinematic-hero__content--carousel">
             <div
-                className={`cinematic-hero__copy hero-copy-window reveal is-visible hero-copy-window--${heroCopyWindowState}`}
+                className="cinematic-hero__copy hero-copy-window reveal is-visible"
             >
               <div className="window-titlebar hero-copy-window__titlebar">
                 <div className="window-titlebar__caption">
@@ -431,36 +427,9 @@ export default function HomePage() {
                   <span>Age of Scent Story</span>
                 </div>
 
-                <div
-                    className="window-controls"
-                    aria-label="Hero story window controls"
-                >
-                  <button
-                      type="button"
-                      aria-label="Minimize hero story card"
-                      onClick={() => setHeroCopyWindowState("minimized")}
-                  >
-                    −
-                  </button>
-                  <button
-                      type="button"
-                      aria-label="Restore hero story card"
-                      onClick={() => setHeroCopyWindowState("open")}
-                  >
-                    □
-                  </button>
-                  <button
-                      type="button"
-                      aria-label="Close hero story card"
-                      onClick={() => setHeroCopyWindowState("closed")}
-                  >
-                    ×
-                  </button>
-                </div>
               </div>
 
-              {heroCopyWindowState === "open" ? (
-                  <div className="hero-copy-window__body">
+              <div className="hero-copy-window__body">
                     <p className="eyebrow">Age of Scent</p>
                     <h1>The energy of youth in every spray</h1>
                     <p className="hero-lede">
@@ -476,16 +445,7 @@ export default function HomePage() {
                         Read Story
                       </Link>
                     </div>
-                  </div>
-              ) : (
-                  <button
-                      className="window-iconified-bar hero-copy-window__restore"
-                      type="button"
-                      onClick={() => setHeroCopyWindowState("open")}
-                  >
-                    Story card is hidden. Click to restore.
-                  </button>
-              )}
+              </div>
             </div>
 
             <div className="hero-mobile-product-preview" aria-hidden="true">
@@ -585,64 +545,6 @@ export default function HomePage() {
                   </p>
               ) : null}
             </div>
-
-            {myStories.length > 0 ? (
-                <div className="my-story-controls">
-                  <p className="eyebrow">Your Stories</p>
-                  <div className="client-story-row">
-                    {myStories.map((story) => (
-                        <article
-                            className="client-story client-story--editable"
-                            key={story.id}
-                        >
-                          <img src={mediaUrl(story.imageUrl)} alt="Your story" />
-                          <div>
-                            <strong>{story.status || "PENDING"}</strong>
-                            <input
-                                defaultValue={story.note}
-                                maxLength={240}
-                                onBlur={(event) => {
-                                  if (event.currentTarget.value !== story.note) {
-                                    handleStoryNoteUpdate(
-                                        story.id,
-                                        event.currentTarget.value,
-                                    );
-                                  }
-                                }}
-                                placeholder="Update your note"
-                            />
-                            <label className="upload-field upload-field--small">
-                        <span className="upload-field__button">
-                          Replace photo
-                        </span>
-                              <span className="upload-field__name">
-                          Choose new image
-                        </span>
-                              <input
-                                  type="file"
-                                  accept="image/jpeg,image/png,image/webp"
-                                  onChange={(event) => {
-                                    handleStoryReplace(
-                                        story.id,
-                                        event.target.files?.[0],
-                                    );
-                                    event.currentTarget.value = "";
-                                  }}
-                              />
-                            </label>
-                            <button
-                                className="btn btn--small btn--ghost"
-                                type="button"
-                                onClick={() => handleStoryDelete(story.id)}
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        </article>
-                    ))}
-                  </div>
-                </div>
-            ) : null}
 
             <form className="story-submit-form" onSubmit={handleStorySubmit}>
               <label className="upload-field upload-field--story">

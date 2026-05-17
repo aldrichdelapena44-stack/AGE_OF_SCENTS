@@ -57,17 +57,23 @@ function resolveBackendOrigin() {
 export const API_BASE_URL = resolveApiBaseUrl();
 export const API_ORIGIN = resolveBackendOrigin();
 
-export const mediaUrl = (path?: string | null) => {
+export const mediaUrl = (path?: string | null, cacheBust = false) => {
     if (!path) return "";
 
+    const appendVersion = (url: string) => {
+        if (!cacheBust) return url;
+        const separator = url.includes("?") ? "&" : "?";
+        return `${url}${separator}v=${Date.now()}`;
+    };
+
     if (path.startsWith("http://") || path.startsWith("https://")) {
-        return path;
+        return appendVersion(path);
     }
 
     const cleanPath = path.replace(/^\/+/, "");
 
     if (cleanPath.startsWith("uploads/")) {
-        return API_ORIGIN ? `${API_ORIGIN}/${cleanPath}` : `/${cleanPath}`;
+        return appendVersion(API_ORIGIN ? `${API_ORIGIN}/${cleanPath}` : `/${cleanPath}`);
     }
 
     return `/${cleanPath}`;
@@ -125,6 +131,7 @@ async function request<T>(
         response = await fetch(url, {
             ...options,
             headers,
+            cache: options.method === "GET" ? "no-store" : options.cache,
         });
     } catch (error) {
         throw new Error(getFriendlyNetworkError(error));
@@ -151,6 +158,7 @@ export const api = {
     get: <T>(path: string): Promise<T> => {
         return request<T>(path, {
             method: "GET",
+            cache: "no-store",
         });
     },
 

@@ -247,15 +247,19 @@ export default function AdminProductsPage() {
                                         </p>
                                         <div className="form-group">
                                             <label htmlFor={`product-image-${product.id}`}>Choose replacement image</label>
-                                            <input
-                                                id={`product-image-${product.id}`}
-                                                type="file"
-                                                accept="image/jpeg,image/png,image/webp"
-                                                onChange={(event) => {
-                                                    chooseProductImage(product.id, event.target.files?.[0]);
-                                                    event.currentTarget.value = "";
-                                                }}
-                                            />
+                                            <label className="upload-field upload-field--admin-product" htmlFor={`product-image-${product.id}`}>
+                                                <span className="upload-field__button">Choose file</span>
+                                                <span className="upload-field__name">{imageFiles[product.id]?.name || "No file chosen"}</span>
+                                                <input
+                                                    id={`product-image-${product.id}`}
+                                                    type="file"
+                                                    accept="image/jpeg,image/png,image/webp"
+                                                    onChange={(event) => {
+                                                        chooseProductImage(product.id, event.target.files?.[0]);
+                                                        event.currentTarget.value = "";
+                                                    }}
+                                                />
+                                            </label>
                                         </div>
                                         <div className="button-row">
                                             <button

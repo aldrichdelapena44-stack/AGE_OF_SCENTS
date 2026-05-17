@@ -30,7 +30,10 @@ export default function SiteFooter() {
             <div className="site-footer__inner footer-grid">
                 <div>
                     <Link href="/" className="brand footer-brand">
-                        <span className="brand__mark">AS</span>
+                        <span className="brand__mark brand__mark--logo">
+                            <img src="/logo.png" alt="" aria-hidden="true" onError={(event) => { event.currentTarget.style.display = "none"; }} />
+                            <span>AS</span>
+                        </span>
                         <span>AGE OF SCENT</span>
                     </Link>
                     <div className="social-link-row" aria-label="Social media links">
