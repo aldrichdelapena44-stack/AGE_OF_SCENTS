@@ -4419,3 +4419,276 @@ input[type="file"]::file-selector-button {
         flex-direction: column;
     }
 }
+
+
+/* ==========================================================
+   AGE OF SCENT final readability + story cleanup patch
+   - clearer light-mode cards across the whole site
+   - product detail image fits in frame
+   - homepage/story product promo block hidden; shop remains visible
+   ========================================================== */
+
+/* Light mode: make every card use the same readable cream/black-gold look. */
+[data-theme="light"] .card,
+[data-theme="light"] .story-step,
+[data-theme="light"] .signature-card,
+[data-theme="light"] .product-card,
+[data-theme="light"] .contact-card,
+[data-theme="light"] .form-card,
+[data-theme="light"] .account-card,
+[data-theme="light"] .admin-row-card,
+[data-theme="light"] .admin-product-card,
+[data-theme="light"] .stat-card,
+[data-theme="light"] .legal-card,
+[data-theme="light"] .settings-page-card,
+[data-theme="light"] .payment-report-card,
+[data-theme="light"] .story-share-strip,
+[data-theme="light"] .client-story,
+[data-theme="light"] .notification-item,
+[data-theme="light"] .transaction-window,
+[data-theme="light"] .product-details,
+[data-theme="light"] .product-details.card,
+[data-theme="light"] .story-panel,
+[data-theme="light"] .hero-copy-window,
+[data-theme="light"] .collection-note {
+    background:
+        linear-gradient(145deg, rgba(255, 252, 246, 0.98), rgba(244, 228, 205, 0.96)) !important;
+    border-color: rgba(139, 91, 32, 0.22) !important;
+    color: #20150b !important;
+    box-shadow: 0 24px 70px rgba(73, 45, 15, 0.12) !important;
+}
+
+/* Light mode: all text inside cards should be readable. */
+[data-theme="light"] .card *,
+[data-theme="light"] .story-step *,
+[data-theme="light"] .signature-card *,
+[data-theme="light"] .product-card *,
+[data-theme="light"] .contact-card *,
+[data-theme="light"] .form-card *,
+[data-theme="light"] .account-card *,
+[data-theme="light"] .admin-row-card *,
+[data-theme="light"] .admin-product-card *,
+[data-theme="light"] .stat-card *,
+[data-theme="light"] .legal-card *,
+[data-theme="light"] .settings-page-card *,
+[data-theme="light"] .payment-report-card *,
+[data-theme="light"] .story-share-strip *,
+[data-theme="light"] .client-story *,
+[data-theme="light"] .notification-item *,
+[data-theme="light"] .transaction-window *,
+[data-theme="light"] .product-details *,
+[data-theme="light"] .story-panel *,
+[data-theme="light"] .hero-copy-window *,
+[data-theme="light"] .collection-note * {
+    text-shadow: none !important;
+}
+
+[data-theme="light"] .card h1,
+[data-theme="light"] .card h2,
+[data-theme="light"] .card h3,
+[data-theme="light"] .card h4,
+[data-theme="light"] .story-step h3,
+[data-theme="light"] .signature-card h3,
+[data-theme="light"] .product-card h3,
+[data-theme="light"] .account-card h3,
+[data-theme="light"] .admin-product-card__heading h3,
+[data-theme="light"] .product-details__content h1,
+[data-theme="light"] .product-details__content h2,
+[data-theme="light"] .hero-copy-window h1,
+[data-theme="light"] .hero-copy-window h2,
+[data-theme="light"] .story-copy h2,
+[data-theme="light"] .split-heading h2,
+[data-theme="light"] .section-heading h2 {
+    color: #1f140b !important;
+}
+
+[data-theme="light"] .card p,
+[data-theme="light"] .card li,
+[data-theme="light"] .card span,
+[data-theme="light"] .card small,
+[data-theme="light"] .muted,
+[data-theme="light"] .large-copy,
+[data-theme="light"] .product-card__description,
+[data-theme="light"] .scent-notes,
+[data-theme="light"] .detail-list div,
+[data-theme="light"] .detail-list span,
+[data-theme="light"] .detail-list strong,
+[data-theme="light"] .product-details__content p,
+[data-theme="light"] .client-story p,
+[data-theme="light"] .notification-item p,
+[data-theme="light"] .payment-table td,
+[data-theme="light"] .admin-row-card p,
+[data-theme="light"] .story-panel p,
+[data-theme="light"] .collection-note p {
+    color: #3a2718 !important;
+}
+
+[data-theme="light"] .eyebrow,
+[data-theme="light"] .section-kicker,
+[data-theme="light"] .detail-list strong,
+[data-theme="light"] label,
+[data-theme="light"] .form-group label {
+    color: #9b6416 !important;
+}
+
+[data-theme="light"] .price,
+[data-theme="light"] .product-details__price,
+[data-theme="light"] .story-step span,
+[data-theme="light"] .signature-card__index,
+[data-theme="light"] .client-story__head span,
+[data-theme="light"] .story-time-left {
+    color: #a66d19 !important;
+}
+
+/* Light mode form fields: black text on white/cream fields. */
+[data-theme="light"] input,
+[data-theme="light"] textarea,
+[data-theme="light"] select,
+[data-theme="light"] .search-field,
+[data-theme="light"] .story-product-search,
+[data-theme="light"] .story-top-search {
+    background: rgba(255, 255, 255, 0.98) !important;
+    color: #1f140b !important;
+    border-color: rgba(139, 91, 32, 0.25) !important;
+}
+
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+    color: rgba(58, 39, 24, 0.58) !important;
+}
+
+/* Product detail page: keep the whole perfume image visible, not cropped. */
+.product-details__media,
+.product-visual--details,
+.product-visual--hero,
+.product-visual--feature {
+    overflow: visible !important;
+}
+
+.product-details__media img,
+.product-visual--details img,
+.product-visual--hero img,
+.product-visual--feature img,
+.product-visual__image {
+    object-fit: contain !important;
+    max-width: 92% !important;
+    max-height: min(68vh, 560px) !important;
+}
+
+/* Story carousel/hero: show the bottle as a whole and keep text readable in light mode. */
+.cinematic-hero__visual img,
+.cinematic-hero .product-visual__image,
+.hero-product-card img {
+    object-fit: contain !important;
+    max-height: min(70vh, 620px) !important;
+}
+
+[data-theme="light"] .hero-copy-window {
+    background:
+        linear-gradient(145deg, rgba(255, 252, 246, 0.96), rgba(242, 222, 190, 0.94)) !important;
+}
+
+[data-theme="light"] .hero-copy-window .window-titlebar,
+[data-theme="light"] .window-titlebar {
+    background: linear-gradient(180deg, rgba(250, 240, 224, 0.98), rgba(233, 207, 166, 0.95)) !important;
+    color: #28190b !important;
+}
+
+/* Settings buttons stay simple: Dark mode / White mode only. */
+.theme-choice-list--text-only .theme-choice {
+    min-height: 58px;
+    justify-content: center;
+    text-align: center;
+}
+
+.theme-choice-list--text-only .theme-choice strong {
+    margin: 0;
+}
+
+/* Notifications: make pin/delete always clear and compact. */
+.notification-actions {
+    display: inline-flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.notification-item__topline {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.notification-action-button {
+    min-height: 30px;
+    padding: 0.35rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid rgba(215, 180, 106, 0.34);
+    background: rgba(215, 180, 106, 0.08);
+    color: #f5dfaa;
+    font-size: 0.72rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.notification-action-button--danger {
+    color: #ffd1c9;
+    border-color: rgba(255, 143, 122, 0.36);
+}
+
+.notification-item.is-pinned {
+    border-color: rgba(215, 180, 106, 0.64) !important;
+    box-shadow: 0 0 0 1px rgba(215, 180, 106, 0.16), 0 20px 55px rgba(0,0,0,0.22) !important;
+}
+
+[data-theme="light"] .notification-action-button {
+    background: rgba(166, 109, 25, 0.10) !important;
+    color: #6e430d !important;
+    border-color: rgba(166, 109, 25, 0.28) !important;
+}
+
+[data-theme="light"] .notification-action-button--danger {
+    color: #8d2d1d !important;
+    border-color: rgba(141, 45, 29, 0.30) !important;
+}
+
+/* Hide the product promo/list section that was added under Story/Home.
+   Shop page keeps its products because this only targets the home/story layout. */
+.luxury-home .boutique-intro,
+.luxury-home .boutique-intro + .product-grid,
+.luxury-home .product-grid--cinematic,
+body:has(#story) .boutique-intro,
+body:has(#story) .boutique-intro + .product-grid,
+body:has(#story) .product-grid--cinematic {
+    display: none !important;
+}
+
+/* Mobile readability */
+@media (max-width: 740px) {
+    [data-theme="light"] .card,
+    [data-theme="light"] .story-step,
+    [data-theme="light"] .signature-card,
+    [data-theme="light"] .product-card,
+    [data-theme="light"] .story-share-strip,
+    [data-theme="light"] .product-details {
+        border-radius: 22px !important;
+    }
+
+    .notification-item__topline {
+        flex-direction: column;
+    }
+
+    .notification-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .product-details__media img,
+    .product-visual--details img,
+    .product-visual__image {
+        max-width: 96% !important;
+        max-height: 440px !important;
+    }
+}
+
