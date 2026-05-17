@@ -5,6 +5,7 @@ export type DeliveryLandmark = {
     id: number;
     name: string;
     details?: string;
+    shippingFee: number;
     isActive: boolean;
 };
 
@@ -32,12 +33,14 @@ const defaultSettings: StoreSettings = {
             id: 1,
             name: "Main Gate / Entrance",
             details: "Default meetup point for local delivery.",
+            shippingFee: 0,
             isActive: true
         },
         {
             id: 2,
             name: "Barangay Hall",
             details: "Confirm exact barangay and contact number after checkout.",
+            shippingFee: 0,
             isActive: true
         }
     ],
@@ -48,17 +51,53 @@ function ensureDataDir() {
     fs.mkdirSync(dataDir, { recursive: true });
 }
 
+function safeMoney(value: unknown) {
+    if (typeof value === "string") {
+        const cleaned = value.replace(/[^0-9.\-]/g, "");
+        const amount = Number(cleaned || 0);
+        if (!Number.isFinite(amount) || amount < 0) return 0;
+        return Math.round(amount * 100) / 100;
+    }
+
+    const amount = Number(value ?? 0);
+    if (!Number.isFinite(amount) || amount < 0) return 0;
+    return Math.round(amount * 100) / 100;
+}
+
+function readLandmarkShippingFee(value: Partial<DeliveryLandmark> & Record<string, unknown>) {
+    return safeMoney(
+        value.shippingFee ??
+        value["shipping fee"] ??
+        value["shipping_fee"] ??
+        value["deliveryFee"] ??
+        value["delivery_fee"] ??
+        value["fee"] ??
+        value["amount"] ??
+        0
+    );
+}
+
 function loadSettings() {
     try {
         if (!fs.existsSync(settingsDataFile)) return { ...defaultSettings };
         const parsed = JSON.parse(fs.readFileSync(settingsDataFile, "utf8")) as Partial<StoreSettings>;
-        return {
+        const merged = {
             ...defaultSettings,
             ...parsed,
             deliveryLandmarks: Array.isArray(parsed.deliveryLandmarks)
-                ? parsed.deliveryLandmarks
+                ? parsed.deliveryLandmarks.map((item, index) => {
+                    const value = item as Partial<DeliveryLandmark>;
+                    return {
+                        id: Number.isInteger(value.id) && Number(value.id) > 0 ? Number(value.id) : index + 1,
+                        name: String(value.name || "").trim(),
+                        details: String(value.details || "").trim(),
+                        shippingFee: readLandmarkShippingFee(value as Partial<DeliveryLandmark> & Record<string, unknown>),
+                        isActive: value.isActive !== false
+                    };
+                }).filter((item) => item.name.length > 0)
                 : defaultSettings.deliveryLandmarks
         };
+        return merged;
     } catch {
         return { ...defaultSettings };
     }
@@ -81,7 +120,8 @@ function normalizeLandmarks(input: unknown): DeliveryLandmark[] {
                 id: Number.isInteger(value.id) && Number(value.id) > 0 ? Number(value.id) : index + 1,
                 name: String(value.name || "").trim(),
                 details: String(value.details || "").trim(),
-                isActive: Boolean(value.isActive)
+                shippingFee: readLandmarkShippingFee(value as Partial<DeliveryLandmark> & Record<string, unknown>),
+                isActive: value.isActive !== false
             };
         })
         .filter((item) => item.name.length > 0);
@@ -100,6 +140,12 @@ export function getPublicCheckoutSettings() {
         adminDeliveryAddress: settings.adminDeliveryAddress,
         deliveryLandmarks: settings.deliveryLandmarks.filter((item) => item.isActive)
     };
+}
+
+export function getDeliveryLandmarkByName(name?: string) {
+    const cleanName = String(name || "").trim().toLowerCase();
+    if (!cleanName) return null;
+    return settings.deliveryLandmarks.find((item) => item.isActive && item.name.trim().toLowerCase() === cleanName) || null;
 }
 
 export function updateStoreSettings(input: Partial<StoreSettings>) {

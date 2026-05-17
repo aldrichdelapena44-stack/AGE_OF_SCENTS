@@ -15,11 +15,12 @@ import { deleteFeedback, markFeedbackReviewed } from "../services/feedback.servi
 import { updateProduct } from "../services/product.service";
 import {
     approveVerification,
+    deleteVerificationSubmission,
     keepVerificationFile,
     rejectVerification,
     removeVerificationFile
 } from "../services/verification.service";
-import { updateOrderLandmarkStatus, updateOrderStatus, addOrderChatMessage } from "../services/order.service";
+import { addOrderChatMessage, deleteOrderFromAdmin, updateOrderLandmarkStatus, updateOrderStatus } from "../services/order.service";
 import { fail, ok } from "../utils/response";
 
 type RequestWithFile = Request & {
@@ -35,6 +36,12 @@ function toPublicProductUploadUrl(filePath: string) {
     return `/uploads/products/${baseName}`;
 }
 
+function disableCache(res: Response) {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+}
+
 export function summary(_req: Request, res: Response) {
     return ok(res, getAdminSummary(), "Admin summary fetched.");
 }
@@ -44,13 +51,19 @@ export function users(_req: Request, res: Response) {
 }
 
 export function orders(_req: Request, res: Response) {
+    disableCache(res);
     return ok(res, getAdminOrders(), "Admin orders fetched.");
 }
 
 
 export function updateAdminOrderStatus(req: Request & { user?: { id: number; fullName: string; role: "ADMIN" | "CUSTOMER" } }, res: Response) {
     try {
-        const record = updateOrderStatus(Number(req.params.id), req.body.status, typeof req.body.deliveryNote === "string" ? req.body.deliveryNote : undefined);
+        const record = updateOrderStatus(
+            Number(req.params.id),
+            req.body.status,
+            typeof req.body.deliveryNote === "string" ? req.body.deliveryNote : undefined,
+            typeof req.body.shippingFee !== "undefined" ? Number(req.body.shippingFee) : undefined
+        );
         if (!record) return fail(res, "Order not found.", 404);
         return ok(res, record, "Order status updated.");
     } catch (error) {
@@ -61,12 +74,24 @@ export function updateAdminOrderStatus(req: Request & { user?: { id: number; ful
 export function updateAdminOrderLandmark(req: Request, res: Response) {
     try {
         const status = req.body.landmarkStatus === "REJECTED" ? "REJECTED" : req.body.landmarkStatus === "PENDING" ? "PENDING" : "APPROVED";
-        const record = updateOrderLandmarkStatus(Number(req.params.id), status, typeof req.body.note === "string" ? req.body.note : undefined);
+        const record = updateOrderLandmarkStatus(
+            Number(req.params.id),
+            status,
+            typeof req.body.note === "string" ? req.body.note : undefined,
+            typeof req.body.shippingFee !== "undefined" ? Number(req.body.shippingFee) : undefined
+        );
         if (!record) return fail(res, "Order not found.", 404);
         return ok(res, record, "Delivery landmark confirmation updated.");
     } catch (error) {
         return fail(res, error instanceof Error ? error.message : "Landmark update failed.", 400);
     }
+}
+
+
+export function deleteAdminOrder(req: Request, res: Response) {
+    const record = deleteOrderFromAdmin(Number(req.params.id));
+    if (!record) return fail(res, "Order not found.", 404);
+    return ok(res, record, "Order deleted from admin view. The client was notified.");
 }
 
 export function sendAdminOrderMessage(req: Request & { user?: { id: number; fullName: string; role: "ADMIN" | "CUSTOMER" } }, res: Response) {
@@ -115,6 +140,7 @@ export function deleteStorySubmission(req: Request, res: Response) {
 }
 
 export function storeSettings(_req: Request, res: Response) {
+    disableCache(res);
     return ok(res, getStoreSettings(), "Store settings fetched.");
 }
 
@@ -208,4 +234,10 @@ export function removeVerificationSubmissionFile(req: Request, res: Response) {
     const record = removeVerificationFile(Number(req.params.id));
     if (!record) return fail(res, "Verification record not found.", 404);
     return ok(res, record, "Client file removed from storage.");
+}
+
+export function deleteVerificationSubmissionController(req: Request, res: Response) {
+    const record = deleteVerificationSubmission(Number(req.params.id));
+    if (!record) return fail(res, "Verification record not found.", 404);
+    return ok(res, record, "Verification submission deleted permanently.");
 }

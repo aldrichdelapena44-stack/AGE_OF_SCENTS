@@ -5217,3 +5217,95 @@ body:has(#story) .product-grid--cinematic {
         font-size: clamp(2.1rem, 13.5vw, 3.5rem) !important;
     }
 }
+
+/* Shipping fee and mobile upload final fix */
+.inline-action-field {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.inline-action-field .btn {
+    white-space: nowrap;
+    min-height: 3rem;
+}
+
+input[type="file"] {
+    max-width: 100%;
+    font-size: 0.95rem;
+}
+
+input[type="file"]::file-selector-button {
+    max-width: 100%;
+    margin-right: 0.65rem;
+    border: 0;
+    border-radius: 999px;
+    padding: 0.8rem 1.05rem;
+    background: linear-gradient(135deg, #f8e6a5, #c38a39);
+    color: #1d1308;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+}
+
+.upload-field,
+.admin-product-image-card,
+.product-image-admin-card,
+.card:has(input[type="file"]) {
+    max-width: 100%;
+}
+
+.admin-image-path,
+.current-image-path,
+.card p:has(+ input[type="file"]) {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.shipping-fee-admin-control .field-hint {
+    margin-top: 0.45rem;
+}
+
+@media (max-width: 760px) {
+    .inline-action-field {
+        grid-template-columns: 1fr;
+    }
+
+    .inline-action-field .btn,
+    .inline-action-field input {
+        width: 100%;
+    }
+
+    input[type="file"] {
+        display: block;
+        width: 100%;
+        white-space: normal;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    input[type="file"]::file-selector-button {
+        display: block;
+        width: 100%;
+        margin: 0 0 0.55rem 0;
+        text-align: center;
+    }
+
+    .upload-field {
+        grid-template-columns: 1fr !important;
+        justify-items: stretch !important;
+        align-items: stretch !important;
+    }
+
+    .upload-field__button,
+    .upload-field__name {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .upload-field__name {
+        white-space: normal !important;
+        overflow-wrap: anywhere !important;
+    }
+}

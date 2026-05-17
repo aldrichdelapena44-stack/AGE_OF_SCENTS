@@ -70,7 +70,7 @@ export default function AdminOrdersPage() {
 
     async function loadOrders() {
         try {
-            const response = await api.get<{ success: boolean; message: string; data: AdminOrder[] }>("/admin/orders");
+            const response = await api.get<{ success: boolean; message: string; data: AdminOrder[] }>(`/admin/orders?fresh=${Date.now()}`);
             setOrders(response.data || []);
             setMessage("");
         } catch (error) {
@@ -99,7 +99,7 @@ export default function AdminOrdersPage() {
             const response = await api.put<{ success: boolean; message: string; data: AdminOrder }>(`/admin/orders/${orderId}/status`, {
                 status,
                 deliveryNote: deliveryNotes[orderId] || "",
-                shippingFee: shippingFees[orderId]
+                shippingFee: shippingFees[orderId] ?? orders.find((order) => order.id === orderId)?.shippingFee ?? 0
             });
             setOrders((current) => current.map((order) => order.id === orderId ? response.data : order));
             setMessage(response.message || "Order updated. This update will appear in client notifications.");
@@ -108,13 +108,32 @@ export default function AdminOrdersPage() {
         } finally { setSaving(false); }
     }
 
+    async function saveShippingFee(order: AdminOrder) {
+        try {
+            setSaving(true);
+            const nextShippingFee = Number(shippingFees[order.id] ?? order.shippingFee ?? 0);
+            const response = await api.put<{ success: boolean; message: string; data: AdminOrder }>(`/admin/orders/${order.id}/status`, {
+                status: order.status,
+                deliveryNote: deliveryNotes[order.id] || order.deliveryNote || "Shipping fee updated by admin.",
+                shippingFee: nextShippingFee
+            });
+            setOrders((current) => current.map((item) => item.id === order.id ? response.data : item));
+            setShippingFees((current) => ({ ...current, [order.id]: Number(response.data.shippingFee || 0) }));
+            setMessage(`Shipping fee saved. New total: PHP ${Number(response.data.total || 0).toFixed(2)}.`);
+        } catch (error) {
+            setMessage(error instanceof Error ? error.message : "Shipping fee update failed.");
+        } finally {
+            setSaving(false);
+        }
+    }
+
     async function updateLandmark(orderId: number, landmarkStatus: "APPROVED" | "REJECTED") {
         try {
             setSaving(true);
             const response = await api.put<{ success: boolean; message: string; data: AdminOrder }>(`/admin/orders/${orderId}/landmark`, {
                 landmarkStatus,
                 note: deliveryNotes[orderId] || "",
-                shippingFee: shippingFees[orderId]
+                shippingFee: shippingFees[orderId] ?? orders.find((order) => order.id === orderId)?.shippingFee ?? 0
             });
             setOrders((current) => current.map((order) => order.id === orderId ? response.data : order));
             setMessage(response.message || "Landmark updated. The client will see the notification.");
@@ -264,10 +283,21 @@ export default function AdminOrdersPage() {
                                     <label>Admin note / delivery notification</label>
                                     <input value={deliveryNotes[order.id] || order.deliveryNote || ""} onChange={(event) => setDeliveryNotes((current) => ({ ...current, [order.id]: event.target.value }))} placeholder="Example: We will deliver tomorrow at 3 PM." />
                                 </div>
-                                <div className="form-group">
+                                <div className="form-group shipping-fee-admin-control">
                                     <label>Update shipping fee</label>
-                                    <input type="number" min="0" step="1" value={shippingFees[order.id] ?? order.shippingFee ?? 0} onChange={(event) => setShippingFees((current) => ({ ...current, [order.id]: Number(event.target.value || 0) }))} />
-                                    <p className="field-hint">Use this for custom landmark requests or delivery price changes. The client can accept or reject the updated transaction.</p>
+                                    <div className="inline-action-field">
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="1"
+                                            value={shippingFees[order.id] ?? order.shippingFee ?? 0}
+                                            onChange={(event) => setShippingFees((current) => ({ ...current, [order.id]: Number(event.target.value || 0) }))}
+                                        />
+                                        <button className="btn btn--small" type="button" disabled={saving} onClick={() => saveShippingFee(order)}>
+                                            Save Fee
+                                        </button>
+                                    </div>
+                                    <p className="field-hint">Use this for custom landmark requests or delivery price changes. Saving here updates the customer order total and account report.</p>
                                 </div>
                             </div>
 

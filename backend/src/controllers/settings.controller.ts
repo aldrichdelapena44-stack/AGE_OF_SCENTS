@@ -20,11 +20,19 @@ function toPublicUploadUrl(filePath: string) {
     return `/uploads/settings/${path.basename(normalized)}`;
 }
 
+function disableCache(res: Response) {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+}
+
 export function publicCheckoutSettings(_req: Request, res: Response) {
+    disableCache(res);
     return ok(res, getPublicCheckoutSettings(), "Checkout settings fetched.");
 }
 
 export function adminSettings(_req: Request, res: Response) {
+    disableCache(res);
     return ok(res, getStoreSettings(), "Store settings fetched.");
 }
 
