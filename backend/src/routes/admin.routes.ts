@@ -1,6 +1,8 @@
 import { Router } from "express";
 import {
     approveVerificationSubmission,
+    deleteAdminOrder,
+    deleteVerificationSubmissionController,
     feedback,
     keepVerificationSubmissionFile,
     orders,
@@ -38,6 +40,7 @@ router.get("/orders", requireAdmin, orders);
 router.put("/orders/:id/status", requireAdmin, updateAdminOrderStatus);
 router.put("/orders/:id/landmark", requireAdmin, updateAdminOrderLandmark);
 router.post("/orders/:id/messages", requireAdmin, sendAdminOrderMessage);
+router.delete("/orders/:id", requireAdmin, deleteAdminOrder);
 router.get("/products", requireAdmin, products);
 router.get("/stories", requireAdmin, stories);
 router.put("/stories/:id/approve", requireAdmin, approveStorySubmission);
@@ -56,5 +59,6 @@ router.put("/verifications/:id/approve", requireAdmin, approveVerificationSubmis
 router.put("/verifications/:id/reject", requireAdmin, rejectVerificationSubmission);
 router.put("/verifications/:id/file/keep", requireAdmin, keepVerificationSubmissionFile);
 router.put("/verifications/:id/file/remove", requireAdmin, removeVerificationSubmissionFile);
+router.delete("/verifications/:id", requireAdmin, deleteVerificationSubmissionController);
 
 export default router;

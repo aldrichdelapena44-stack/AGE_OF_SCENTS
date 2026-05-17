@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { decreaseProductStock } from "./product.service";
+import { getDeliveryLandmarkByName } from "./store-settings.service";
 
 export type CheckoutItem = {
     id: number;
@@ -39,6 +40,8 @@ export type StoredOrder = {
     address: string;
     gcashNumber?: string;
     items: CheckoutItem[];
+    subtotal?: number;
+    shippingFee?: number;
     total: number;
     status: OrderStatus;
     paymentMethod: PaymentMethod;
@@ -51,6 +54,9 @@ export type StoredOrder = {
     landmarkStatus?: "APPROVED" | "REJECTED" | "PENDING";
     adminConfirmationNote?: string;
     deliveryNote?: string;
+    adminDeleted?: boolean;
+    adminDeletedAt?: string;
+    adminDeletionNote?: string;
     chatMessages: OrderChatMessage[];
     createdAt: string;
     updatedAt?: string;
@@ -63,27 +69,65 @@ function ensureDataDir() {
     fs.mkdirSync(dataDir, { recursive: true });
 }
 
-function loadOrders() {
-    try {
-        if (!fs.existsSync(ordersDataFile)) return [] as StoredOrder[];
-        const parsed = JSON.parse(fs.readFileSync(ordersDataFile, "utf8")) as StoredOrder[];
-        return Array.isArray(parsed) ? parsed.map((order) => ({
-            ...order,
-            status: normalizeStatus(order.status as string),
-            landmarkStatus: order.landmarkStatus || (order.needsLandmarkConfirmation ? "PENDING" : "APPROVED"),
-            chatMessages: Array.isArray(order.chatMessages) ? order.chatMessages : []
-        })) : [];
-    } catch {
-        return [] as StoredOrder[];
-    }
-}
-
 function normalizeStatus(status?: string): OrderStatus {
     if (status === "PAID") return "PAYMENT_CONFIRMATION";
     if (status === "PROCESSING") return "ORDER_PROCESSING";
     if (status === "PENDING_PAYMENT") return "PENDING_CONFIRMATION";
     const allowed: OrderStatus[] = ["PENDING_CONFIRMATION", "PAYMENT_CONFIRMATION", "ORDER_PROCESSING", "READY_TO_SHIP", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED"];
     return allowed.includes(status as OrderStatus) ? status as OrderStatus : "PENDING_CONFIRMATION";
+}
+
+function safeMoney(value: unknown) {
+    const amount = Number(value ?? 0);
+    if (!Number.isFinite(amount) || amount < 0) return 0;
+    return Math.round(amount * 100) / 100;
+}
+
+function calculateSubtotal(items: CheckoutItem[]) {
+    return safeMoney(items.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0));
+}
+
+function recalculateOrderTotal(order: StoredOrder) {
+    order.subtotal = calculateSubtotal(order.items || []);
+    order.shippingFee = safeMoney(order.shippingFee || 0);
+    order.total = safeMoney(order.subtotal + order.shippingFee);
+}
+
+function nextChatId(order: StoredOrder) {
+    return (order.chatMessages || []).reduce((max, item) => Math.max(max, Number(item.id || 0)), 0) + 1;
+}
+
+function pushSystemMessage(order: StoredOrder, message: string) {
+    order.chatMessages = Array.isArray(order.chatMessages) ? order.chatMessages : [];
+    order.chatMessages.push({
+        id: nextChatId(order),
+        senderId: 0,
+        senderName: "AGE OF SCENT Admin",
+        senderRole: "ADMIN",
+        message,
+        createdAt: new Date().toISOString()
+    });
+}
+
+function loadOrders() {
+    try {
+        if (!fs.existsSync(ordersDataFile)) return [] as StoredOrder[];
+        const parsed = JSON.parse(fs.readFileSync(ordersDataFile, "utf8")) as StoredOrder[];
+        return Array.isArray(parsed) ? parsed.map((order) => {
+            const hydrated: StoredOrder = {
+                ...order,
+                status: normalizeStatus(order.status as string),
+                landmarkStatus: order.landmarkStatus || (order.needsLandmarkConfirmation ? "PENDING" : "APPROVED"),
+                chatMessages: Array.isArray(order.chatMessages) ? order.chatMessages : []
+            };
+            if (typeof hydrated.subtotal === "undefined") hydrated.subtotal = calculateSubtotal(hydrated.items || []);
+            if (typeof hydrated.shippingFee === "undefined") hydrated.shippingFee = safeMoney(Number(hydrated.total || 0) - Number(hydrated.subtotal || 0));
+            recalculateOrderTotal(hydrated);
+            return hydrated;
+        }) : [];
+    } catch {
+        return [] as StoredOrder[];
+    }
 }
 
 const orders: StoredOrder[] = loadOrders();
@@ -114,9 +158,15 @@ export function createCheckoutOrder(input: {
         decreaseProductStock(Number(item.id), Number(item.quantity));
     }
 
-    const total = input.items.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
     const custom = (input.customLandmark || "").trim();
-    const needsConfirmation = Boolean(input.needsLandmarkConfirmation || custom || input.selectedLandmark === "OTHER");
+    const selectedLandmark = String(input.selectedLandmark || "").trim();
+    const isOtherLandmark = selectedLandmark.toUpperCase() === "OTHER" || custom.length > 0;
+    const matchedLandmark = !isOtherLandmark ? getDeliveryLandmarkByName(selectedLandmark) : null;
+    const shippingFee = matchedLandmark ? safeMoney(matchedLandmark.shippingFee) : 0;
+    const needsConfirmation = Boolean(input.needsLandmarkConfirmation || isOtherLandmark || !matchedLandmark);
+
+    const normalizedItems = input.items.map((item) => ({ ...item, quantity: Number(item.quantity), price: Number(item.price) }));
+    const subtotal = calculateSubtotal(normalizedItems);
 
     const order: StoredOrder = {
         id: nextOrderId++,
@@ -125,13 +175,15 @@ export function createCheckoutOrder(input: {
         address: input.address.trim(),
         gcashNumber: input.gcashNumber?.trim(),
         customerGcashNumber: input.customerGcashNumber?.trim(),
-        selectedLandmark: input.selectedLandmark?.trim(),
+        selectedLandmark,
         customLandmark: custom,
         needsLandmarkConfirmation: needsConfirmation,
         landmarkStatus: needsConfirmation ? "PENDING" : "APPROVED",
         paymentMethod: input.paymentMethod,
-        items: input.items.map((item) => ({ ...item, quantity: Number(item.quantity), price: Number(item.price) })),
-        total,
+        items: normalizedItems,
+        subtotal,
+        shippingFee,
+        total: safeMoney(subtotal + shippingFee),
         status: "PENDING_CONFIRMATION",
         chatMessages: [],
         createdAt: new Date().toISOString(),
@@ -164,22 +216,26 @@ export function markOrderPaidByReference(reference: string) {
     return order;
 }
 
-export function updateOrderStatus(orderId: number, status: OrderStatus, deliveryNote?: string) {
+export function updateOrderStatus(orderId: number, status: OrderStatus, deliveryNote?: string, shippingFee?: number) {
     const order = orders.find((item) => item.id === orderId);
     if (!order) return null;
     order.status = normalizeStatus(status);
     if (typeof deliveryNote === "string") order.deliveryNote = deliveryNote.trim();
+    if (typeof shippingFee !== "undefined" && Number.isFinite(Number(shippingFee))) order.shippingFee = safeMoney(shippingFee);
+    recalculateOrderTotal(order);
     order.updatedAt = new Date().toISOString();
     saveOrders();
     return order;
 }
 
-export function updateOrderLandmarkStatus(orderId: number, landmarkStatus: "APPROVED" | "REJECTED" | "PENDING", note?: string) {
+export function updateOrderLandmarkStatus(orderId: number, landmarkStatus: "APPROVED" | "REJECTED" | "PENDING", note?: string, shippingFee?: number) {
     const order = orders.find((item) => item.id === orderId);
     if (!order) return null;
     order.landmarkStatus = landmarkStatus;
     order.needsLandmarkConfirmation = landmarkStatus === "PENDING";
     order.adminConfirmationNote = note?.trim() || order.adminConfirmationNote;
+    if (typeof shippingFee !== "undefined" && Number.isFinite(Number(shippingFee))) order.shippingFee = safeMoney(shippingFee);
+    recalculateOrderTotal(order);
     order.updatedAt = new Date().toISOString();
     saveOrders();
     return order;
@@ -192,15 +248,28 @@ export function addOrderChatMessage(orderId: number, input: { senderId: number; 
     if (message.length < 1) throw new Error("Message is required.");
     if (message.length > 1000) throw new Error("Message is too long.");
 
-    const nextId = order.chatMessages.reduce((max, item) => Math.max(max, item.id), 0) + 1;
+    order.chatMessages = Array.isArray(order.chatMessages) ? order.chatMessages : [];
     order.chatMessages.push({
-        id: nextId,
+        id: nextChatId(order),
         senderId: input.senderId,
         senderName: input.senderName,
         senderRole: input.senderRole,
         message,
         createdAt: new Date().toISOString()
     });
+    order.updatedAt = new Date().toISOString();
+    saveOrders();
+    return order;
+}
+
+export function deleteOrderFromAdmin(orderId: number) {
+    const order = orders.find((item) => item.id === orderId);
+    if (!order) return null;
+    order.adminDeleted = true;
+    order.adminDeletedAt = new Date().toISOString();
+    order.adminDeletionNote = "You're not eligible to pay. Please use a valid and transparent transaction.";
+    order.status = "CANCELLED";
+    pushSystemMessage(order, order.adminDeletionNote);
     order.updatedAt = new Date().toISOString();
     saveOrders();
     return order;
@@ -215,9 +284,9 @@ export function getOrderById(orderId: number) {
 }
 
 export function getAllOrders() {
-    return [...orders].sort((a, b) => b.id - a.id);
+    return [...orders].filter((order) => !order.adminDeleted).sort((a, b) => b.id - a.id);
 }
 
 export function countOrders() {
-    return orders.length;
+    return orders.filter((order) => !order.adminDeleted).length;
 }

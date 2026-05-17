@@ -146,22 +146,17 @@ export function syncUserVerificationStatus(userId: number) {
     const hasPending = userSubmissions.some((item) => item.status === "PENDING");
     const hasRejected = userSubmissions.some((item) => item.status === "REJECTED");
 
-    const status =
+    const verificationStatus =
         hasApproved ? "APPROVED" :
             hasPending ? "PENDING" :
                 hasRejected ? "REJECTED" :
                     "PENDING";
 
-    updateUserVerificationStatus(userId, status as any);
-
-    return status;
+    return updateUserVerificationStatus(userId, verificationStatus as any);
 }
 
 export function syncAllUserVerificationStatuses() {
     const userIds = Array.from(new Set(submissions.map((item) => item.userId)));
 
-    return userIds.map((userId) => ({
-        userId,
-        status: syncUserVerificationStatus(userId),
-    }));
+    return userIds.map((userId) => syncUserVerificationStatus(userId));
 }
