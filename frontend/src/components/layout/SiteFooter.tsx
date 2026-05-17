@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const socialLinks = [
-    { label: "Facebook", href: "https://example.com/facebook", icon: "f" },
-    { label: "Instagram", href: "https://example.com/instagram", icon: "◎" },
-    { label: "TikTok", href: "https://example.com/tiktok", icon: "♪" }
+    { label: "Facebook", href: "https://www.facebook.com/share/1CP9tfhmFE/", icon: "f" },
+    { label: "Instagram", href: "https://www.instagram.com/ageofscent.7228904?igsh=MzRxdHFmbXViZmYz", icon: "◎" },
+    { label: "TikTok", href: "https://www.tiktok.com/@yong_an18?_r=1&_t=ZS-96QZwpjx4M5", icon: "♪" }
 ];
 
 export default function SiteFooter() {
