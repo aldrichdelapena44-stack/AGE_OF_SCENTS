@@ -13,6 +13,7 @@ type NotificationItem = {
     createdAt?: string;
     href?: string;
     audience: "ADMIN" | "CUSTOMER" | "ALL";
+    priority?: "normal" | "important";
 };
 
 type OrderLike = {
@@ -50,6 +51,7 @@ type StoryLike = {
     status?: "PENDING" | "APPROVED" | "REJECTED" | string;
     createdAt?: string;
     updatedAt?: string;
+    expiresAt?: string;
     rejectionReason?: string;
 };
 
@@ -61,6 +63,23 @@ type FeedbackLike = {
     status?: string;
     createdAt?: string;
 };
+
+const PINNED_KEY = "age-of-scent-pinned-notifications";
+const DELETED_KEY = "age-of-scent-deleted-notifications";
+
+function readStoredIds(key: string) {
+    if (typeof window === "undefined") return [] as string[];
+    try {
+        const parsed = JSON.parse(localStorage.getItem(key) || "[]");
+        return Array.isArray(parsed) ? parsed.filter((value) => typeof value === "string") : [];
+    } catch {
+        return [];
+    }
+}
+
+function writeStoredIds(key: string, values: string[]) {
+    localStorage.setItem(key, JSON.stringify(Array.from(new Set(values))));
+}
 
 function orderProducts(order: OrderLike) {
     return (order.items || []).map((item) => `${item.quantity}x ${item.name}`).join(", ") || "your perfume order";
@@ -79,9 +98,9 @@ function shortText(value = "", max = 130) {
 
 function storyReminder(story: StoryLike) {
     const status = String(story.status || "PENDING").toUpperCase();
-    if (status === "APPROVED") return "Approved. Your story can now appear on the website.";
+    if (status === "APPROVED") return "Approved. Your story is live for 24 hours.";
     if (status === "REJECTED") return `Rejected. ${story.rejectionReason || "Please upload a clearer photo or update your story details."}`;
-    return "Pending. Please wait for admin approval before it appears publicly.";
+    return "Pending. Admin still needs to approve or reject this story.";
 }
 
 export default function NotificationCenter() {
@@ -89,10 +108,13 @@ export default function NotificationCenter() {
     const [items, setItems] = useState<NotificationItem[]>([]);
     const [readAt, setReadAt] = useState(0);
     const [role, setRole] = useState("CUSTOMER");
+    const [pinnedIds, setPinnedIds] = useState<string[]>([]);
+    const [deletedIds, setDeletedIds] = useState<string[]>([]);
 
     useEffect(() => {
-        const storedReadAt = Number(localStorage.getItem(NOTIFICATION_READ_KEY) || 0);
-        setReadAt(storedReadAt);
+        setPinnedIds(readStoredIds(PINNED_KEY));
+        setDeletedIds(readStoredIds(DELETED_KEY));
+        setReadAt(Number(localStorage.getItem(NOTIFICATION_READ_KEY) || 0));
 
         async function loadNotifications() {
             if (!isLoggedIn()) {
@@ -100,10 +122,11 @@ export default function NotificationCenter() {
                     {
                         id: "guest-order-tracking",
                         title: "Order tracking is ready",
-                        message: "Login to see payment confirmation, order processing, delivery notes, story status, and feedback updates.",
+                        message: "Login to see payment confirmations, delivery notes, story status, checkout updates, and feedback updates.",
                         audience: "ALL",
-                        href: "/login"
-                    }
+                        href: "/login",
+                        priority: "important",
+                    },
                 ]);
                 return;
             }
@@ -116,17 +139,18 @@ export default function NotificationCenter() {
             try {
                 const orderPath = userRole === "ADMIN" ? "/admin/orders" : "/orders/mine";
                 const orderResponse = await api.get<{ success: boolean; message: string; data: OrderLike[] }>(orderPath);
-                (orderResponse.data || []).forEach((order) => {
+                (orderResponse.data || []).slice(0, 12).forEach((order) => {
                     const status = friendlyStatus(order.status);
                     const note = order.deliveryNote ? ` Admin note: ${order.deliveryNote}` : "";
                     if (userRole === "ADMIN") {
                         nextItems.push({
                             id: `admin-order-${order.id}-${order.updatedAt || order.createdAt || order.status}`,
-                            title: "Admin note / delivery notification",
+                            title: "Checkout / payment update",
                             message: `${order.fullName || "A client"} checked out ${orderProducts(order)}. Payment: ${order.paymentMethod || "N/A"}${order.paymentReference ? ` (${order.paymentReference})` : ""}. Status: ${status}. Total PHP ${Number(order.total || 0).toFixed(2)}.${note}`,
                             createdAt: order.updatedAt || order.createdAt,
                             audience: "ADMIN",
-                            href: "/admin/orders"
+                            href: "/admin/orders",
+                            priority: "important",
                         });
                     } else {
                         nextItems.push({
@@ -135,29 +159,30 @@ export default function NotificationCenter() {
                             message: `Your ${orderProducts(order)} is now ${status}.${note || " Please check your account for order progress."}`,
                             createdAt: order.updatedAt || order.createdAt,
                             audience: "CUSTOMER",
-                            href: "/account"
+                            href: "/account",
+                            priority: "important",
                         });
                     }
                 });
             } catch {
                 nextItems.push({
                     id: "orders-unavailable",
-                    title: "Admin note / delivery notification",
-                    message: "Order tracking will appear here once the backend order service is available.",
-                    audience: "ALL"
+                    title: "Order notification unavailable",
+                    message: "Order tracking will appear here once the backend order service responds.",
+                    audience: "ALL",
                 });
             }
 
             try {
                 const productsResponse = await api.get<{ success: boolean; message: string; data: ProductLike[] }>("/products");
-                (productsResponse.data || []).slice(0, 8).forEach((product) => {
+                (productsResponse.data || []).slice(0, 10).forEach((product) => {
                     nextItems.push({
                         id: `product-${product.id}-${product.updatedAt || product.createdAt || product.name}`,
                         title: "Product added / updated",
                         message: `${product.name}${product.category ? ` (${product.category})` : ""}. ${shortText(product.description || "Full product details are available in the shop.")} ${product.scentNotes ? `Notes: ${shortText(product.scentNotes, 80)}.` : ""}${product.price ? ` Price: PHP ${Number(product.price).toFixed(2)}.` : ""}`,
                         createdAt: product.updatedAt || product.createdAt,
                         audience: "ALL",
-                        href: "/shop"
+                        href: "/shop",
                     });
                 });
             } catch {
@@ -167,26 +192,29 @@ export default function NotificationCenter() {
             try {
                 if (userRole === "ADMIN") {
                     const storiesResponse = await api.get<{ success: boolean; message: string; data: StoryLike[] }>("/admin/stories");
-                    (storiesResponse.data || []).slice(0, 8).forEach((story) => {
+                    (storiesResponse.data || []).slice(0, 12).forEach((story) => {
+                        const pending = String(story.status || "PENDING").toUpperCase() === "PENDING";
                         nextItems.push({
                             id: `admin-story-${story.id}-${story.updatedAt || story.createdAt || story.status}`,
-                            title: "Story status reminder",
-                            message: `${story.userName || "A client"} submitted a story. Status: ${friendlyStatus(story.status)}. Reminder: ${String(story.status || "PENDING").toUpperCase() === "PENDING" ? "Approve or reject it shortly." : "Status already reviewed."}`,
+                            title: pending ? "Story waiting for review" : "Story status updated",
+                            message: `${story.userName || "A client"} submitted a story. Status: ${friendlyStatus(story.status)}. ${pending ? "Reminder: approve or reject it shortly." : "The client can now see the status."}`,
                             createdAt: story.updatedAt || story.createdAt,
                             audience: "ADMIN",
-                            href: "/admin/stories"
+                            href: "/admin/stories",
+                            priority: pending ? "important" : "normal",
                         });
                     });
                 } else {
                     const storiesResponse = await api.get<{ success: boolean; message: string; data: StoryLike[] }>("/stories/mine");
-                    (storiesResponse.data || []).slice(0, 8).forEach((story) => {
+                    (storiesResponse.data || []).slice(0, 12).forEach((story) => {
                         nextItems.push({
                             id: `customer-story-${story.id}-${story.updatedAt || story.createdAt || story.status}`,
                             title: "Story status reminder",
                             message: `Status: ${friendlyStatus(story.status)}. ${storyReminder(story)}`,
                             createdAt: story.updatedAt || story.createdAt,
                             audience: "CUSTOMER",
-                            href: "/#story"
+                            href: "/#story",
+                            priority: String(story.status || "PENDING").toUpperCase() === "PENDING" ? "important" : "normal",
                         });
                     });
                 }
@@ -197,14 +225,15 @@ export default function NotificationCenter() {
             if (userRole === "ADMIN") {
                 try {
                     const feedbackResponse = await api.get<{ success: boolean; message: string; data: FeedbackLike[] }>("/admin/feedback");
-                    (feedbackResponse.data || []).slice(0, 8).forEach((feedback) => {
+                    (feedbackResponse.data || []).slice(0, 10).forEach((feedback) => {
                         nextItems.push({
                             id: `feedback-${feedback.id}-${feedback.createdAt}-${feedback.status}`,
                             title: "Feedback received",
                             message: `${feedback.name || "A client"} sent feedback${feedback.rating ? ` (${feedback.rating}/5)` : ""}. ${shortText(feedback.message || "Open admin feedback to review.", 120)}`,
                             createdAt: feedback.createdAt,
                             audience: "ADMIN",
-                            href: "/admin/feedback"
+                            href: "/admin/feedback",
+                            priority: "important",
                         });
                     });
                 } catch {
@@ -224,10 +253,18 @@ export default function NotificationCenter() {
         };
     }, []);
 
-    const visibleItems = useMemo(
-        () => items.filter((item) => item.audience === "ALL" || item.audience === role),
-        [items, role]
-    );
+    const visibleItems = useMemo(() => {
+        return items
+            .filter((item) => item.audience === "ALL" || item.audience === role)
+            .filter((item) => !deletedIds.includes(item.id))
+            .sort((a, b) => {
+                const pinnedDiff = Number(pinnedIds.includes(b.id)) - Number(pinnedIds.includes(a.id));
+                if (pinnedDiff !== 0) return pinnedDiff;
+                const priorityDiff = Number(b.priority === "important") - Number(a.priority === "important");
+                if (priorityDiff !== 0) return priorityDiff;
+                return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+            });
+    }, [items, role, pinnedIds, deletedIds]);
 
     const unreadCount = visibleItems.filter((item) => {
         const time = item.createdAt ? new Date(item.createdAt).getTime() : Date.now();
@@ -239,6 +276,27 @@ export default function NotificationCenter() {
         const now = Date.now();
         localStorage.setItem(NOTIFICATION_READ_KEY, String(now));
         setReadAt(now);
+    }
+
+    function togglePin(id: string) {
+        setPinnedIds((current) => {
+            const next = current.includes(id) ? current.filter((item) => item !== id) : [id, ...current];
+            writeStoredIds(PINNED_KEY, next);
+            return next;
+        });
+    }
+
+    function deleteNotification(id: string) {
+        setDeletedIds((current) => {
+            const next = current.includes(id) ? current : [...current, id];
+            writeStoredIds(DELETED_KEY, next);
+            return next;
+        });
+        setPinnedIds((current) => {
+            const next = current.filter((item) => item !== id);
+            writeStoredIds(PINNED_KEY, next);
+            return next;
+        });
     }
 
     return (
@@ -259,14 +317,27 @@ export default function NotificationCenter() {
                     <div className="notification-list">
                         {visibleItems.length === 0 ? <p className="muted">No notifications yet.</p> : null}
                         {visibleItems.map((item) => {
-                            const content = (
-                                <article className="notification-item">
-                                    <strong>{item.title}</strong>
+                            const pinned = pinnedIds.includes(item.id);
+                            return (
+                                <article className={`notification-item ${pinned ? "is-pinned" : ""}`} key={item.id}>
+                                    <div className="notification-item__topline">
+                                        <strong>{pinned ? "📌 " : ""}{item.title}</strong>
+                                        <div className="notification-actions">
+                                            <button className="notification-action-button" type="button" onClick={() => togglePin(item.id)} aria-label={pinned ? "Unpin notification" : "Pin notification"}>
+                                                {pinned ? "Unpin" : "Pin"}
+                                            </button>
+                                            <button className="notification-action-button notification-action-button--danger" type="button" onClick={() => deleteNotification(item.id)} aria-label="Delete notification">
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </div>
                                     <p>{item.message}</p>
-                                    <small>{formatDateTime(item.createdAt)}</small>
+                                    <div className="notification-item__footer">
+                                        <small>{formatDateTime(item.createdAt)}</small>
+                                        {item.href ? <Link className="notification-open-link" href={item.href}>Open</Link> : null}
+                                    </div>
                                 </article>
                             );
-                            return item.href ? <Link key={item.id} href={item.href}>{content}</Link> : <div key={item.id}>{content}</div>;
                         })}
                     </div>
                 </section>

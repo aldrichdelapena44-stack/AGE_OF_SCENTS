@@ -4,8 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const socialLinks = [
-    { label: "LinkedIn", href: "https://example.com/linkedin", icon: "in" },
-    { label: "Messenger", href: "https://example.com/messenger", icon: "💬" },
     { label: "Facebook", href: "https://example.com/facebook", icon: "f" },
     { label: "Instagram", href: "https://example.com/instagram", icon: "◎" },
     { label: "TikTok", href: "https://example.com/tiktok", icon: "♪" }

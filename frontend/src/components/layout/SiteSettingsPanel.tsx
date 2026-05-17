@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { applySiteTheme, getStoredSiteTheme, storeSiteTheme, type SiteTheme } from "@/lib/site-preferences";
 
-const themes: { value: SiteTheme; label: string; description: string }[] = [
-    { value: "dark", label: "Dark", description: "Deep luxury perfume look." },
-    { value: "light", label: "Light", description: "Clean bright shopping view." }
+const themes: { value: SiteTheme; label: string }[] = [
+    { value: "dark", label: "Dark mode" },
+    { value: "light", label: "White mode" }
 ];
 
 export default function SiteSettingsPanel() {
@@ -40,8 +40,7 @@ export default function SiteSettingsPanel() {
                 <section className="settings-popover card" aria-label="Website settings">
                     <p className="eyebrow">Settings</p>
                     <h3>Website theme</h3>
-                    <p className="muted">Switch between dark and light mode.</p>
-                    <div className="theme-choice-list">
+                    <div className="theme-choice-list theme-choice-list--text-only">
                         {themes.map((item) => (
                             <button
                                 className={`theme-choice ${theme === item.value ? "is-active" : ""}`}
@@ -50,7 +49,6 @@ export default function SiteSettingsPanel() {
                                 onClick={() => chooseTheme(item.value)}
                             >
                                 <strong>{item.label}</strong>
-                                <span>{item.description}</span>
                             </button>
                         ))}
                     </div>
