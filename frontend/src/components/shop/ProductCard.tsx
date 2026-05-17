@@ -24,8 +24,19 @@ type ProductCardProps = {
     revealDelay?: number;
 };
 
+function normalizeCategory(category?: string) {
+    const cleanCategory = category?.trim();
+
+    if (!cleanCategory) {
+        return "Unisex";
+    }
+
+    return cleanCategory;
+}
+
 export default function ProductCard({ product, revealDelay = 0 }: ProductCardProps) {
     const [added, setAdded] = useState(false);
+    const category = normalizeCategory(product.category);
 
     useEffect(() => {
         if (!added) return;
@@ -53,7 +64,8 @@ export default function ProductCard({ product, revealDelay = 0 }: ProductCardPro
                     <span>{product.volume || "50 ml"}</span>
                     <span>{product.stock > 0 ? "In stock" : "Reserved"}</span>
                 </div>
-                {product.category ? <p className="category-chip">{product.category}</p> : null}
+
+                <p className="category-chip">{category}</p>
 
                 <h3>{product.name}</h3>
                 <p className="muted product-card__description">{product.description}</p>
