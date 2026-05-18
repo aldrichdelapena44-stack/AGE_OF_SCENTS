@@ -17,6 +17,7 @@ import {
     storeSettings,
     updateStoreSettingsController,
     updateStoreGcashQr,
+    updateStoreLandmarkImage,
     rejectVerificationSubmission,
     removeFeedback,
     removeVerificationSubmissionFile,
@@ -49,6 +50,7 @@ router.delete("/stories/:id", requireAdmin, deleteStorySubmission);
 router.get("/settings", requireAdmin, storeSettings);
 router.put("/settings", requireAdmin, updateStoreSettingsController);
 router.put("/settings/gcash-qr", requireAdmin, uploadSettingsImage.single("image"), updateStoreGcashQr);
+router.put("/settings/landmarks/:id/image", requireAdmin, uploadSettingsImage.single("image"), updateStoreLandmarkImage);
 router.put("/products/:id", requireAdmin, validateBody(updateProductSchema), updateAdminProduct);
 router.put("/products/:id/image", requireAdmin, uploadProductImage.single("image"), updateAdminProductImage);
 router.get("/feedback", requireAdmin, feedback);

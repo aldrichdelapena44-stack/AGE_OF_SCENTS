@@ -9,6 +9,7 @@ type Landmark = {
     id: number;
     name: string;
     details?: string;
+    imageUrl?: string;
     shippingFee?: number;
     isActive: boolean;
 };
@@ -36,6 +37,7 @@ export default function AdminSettingsPage() {
     const [message, setMessage] = useState("Loading checkout settings...");
     const [saving, setSaving] = useState(false);
     const [qrFile, setQrFile] = useState<File | null>(null);
+    const [landmarkFiles, setLandmarkFiles] = useState<Record<number, File | null>>({});
 
     async function loadSettings() {
         try {
@@ -65,7 +67,7 @@ export default function AdminSettingsPage() {
             ...current,
             deliveryLandmarks: [
                 ...current.deliveryLandmarks,
-                { id: Date.now(), name: "", details: "", shippingFee: 0, isActive: true }
+                { id: Date.now(), name: "", details: "", imageUrl: "", shippingFee: 0, isActive: true }
             ]
         }));
     }
@@ -86,6 +88,40 @@ export default function AdminSettingsPage() {
             window.dispatchEvent(new CustomEvent("checkout-settings-updated"));
         } catch (error) {
             setMessage(error instanceof Error ? error.message : "Settings update failed.");
+        } finally {
+            setSaving(false);
+        }
+    }
+
+
+    async function uploadLandmarkPhoto(index: number) {
+        const landmark = settings.deliveryLandmarks[index];
+        const file = landmark ? landmarkFiles[landmark.id] : null;
+
+        if (!landmark) {
+            setMessage("Landmark not found.");
+            return;
+        }
+
+        if (!file) {
+            setMessage("Choose a landmark photo first.");
+            return;
+        }
+
+        try {
+            setSaving(true);
+            const formData = new FormData();
+            formData.append("image", file);
+            const response = await api.put<{ success: boolean; message: string; data: StoreSettings }>(
+                `/admin/settings/landmarks/${landmark.id}/image`,
+                formData
+            );
+            setSettings(response.data);
+            setLandmarkFiles((current) => ({ ...current, [landmark.id]: null }));
+            setMessage(response.message || "Landmark photo uploaded.");
+            window.dispatchEvent(new CustomEvent("checkout-settings-updated"));
+        } catch (error) {
+            setMessage(error instanceof Error ? error.message : "Landmark photo upload failed. Save checkout settings first, then try again.");
         } finally {
             setSaving(false);
         }
@@ -186,6 +222,39 @@ export default function AdminSettingsPage() {
                                     <p className="field-hint">This fee is shown to customers and added to checkout totals.</p>
                                 </div>
                             </div>
+                            <div className="landmark-photo-control">
+                                <div className="landmark-photo-preview">
+                                    {landmark.imageUrl ? (
+                                        <img src={mediaUrl(landmark.imageUrl, true)} alt={`${landmark.name || "Delivery landmark"} preview`} />
+                                    ) : (
+                                        <span>No landmark photo yet</span>
+                                    )}
+                                </div>
+                                <div className="form-group landmark-photo-control__field">
+                                    <label>Landmark photo for customer visualization</label>
+                                    <div className="upload-field upload-field--landmark">
+                                        <input
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp"
+                                            onChange={(event) => setLandmarkFiles((current) => ({
+                                                ...current,
+                                                [landmark.id]: event.target.files?.[0] || null
+                                            }))}
+                                        />
+                                        <span>{landmarkFiles[landmark.id]?.name || "No file chosen"}</span>
+                                    </div>
+                                    <p className="field-hint">Save checkout settings first for new landmarks, then upload the photo.</p>
+                                </div>
+                                <button
+                                    className="btn btn--small btn--ghost"
+                                    type="button"
+                                    disabled={saving || !landmarkFiles[landmark.id]}
+                                    onClick={() => uploadLandmarkPhoto(index)}
+                                >
+                                    Upload Landmark Photo
+                                </button>
+                            </div>
+
                             <div className="button-row">
                                 <label className="checkbox-row">
                                     <input type="checkbox" checked={landmark.isActive} onChange={(event) => updateLandmark(index, "isActive", event.target.checked)} />

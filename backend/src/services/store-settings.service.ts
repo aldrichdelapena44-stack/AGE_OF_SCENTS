@@ -5,6 +5,7 @@ export type DeliveryLandmark = {
     id: number;
     name: string;
     details?: string;
+    imageUrl?: string;
     shippingFee: number;
     isActive: boolean;
 };
@@ -33,6 +34,7 @@ const defaultSettings: StoreSettings = {
             id: 1,
             name: "Main Gate / Entrance",
             details: "Default meetup point for local delivery.",
+            imageUrl: "",
             shippingFee: 0,
             isActive: true
         },
@@ -40,6 +42,7 @@ const defaultSettings: StoreSettings = {
             id: 2,
             name: "Barangay Hall",
             details: "Confirm exact barangay and contact number after checkout.",
+            imageUrl: "",
             shippingFee: 0,
             isActive: true
         }
@@ -91,6 +94,7 @@ function loadSettings() {
                         id: Number.isInteger(value.id) && Number(value.id) > 0 ? Number(value.id) : index + 1,
                         name: String(value.name || "").trim(),
                         details: String(value.details || "").trim(),
+                        imageUrl: typeof value.imageUrl === "string" ? value.imageUrl.trim() : "",
                         shippingFee: readLandmarkShippingFee(value as Partial<DeliveryLandmark> & Record<string, unknown>),
                         isActive: value.isActive !== false
                     };
@@ -124,6 +128,7 @@ function normalizeLandmarks(input: unknown): DeliveryLandmark[] {
                 id: Number.isInteger(value.id) && Number(value.id) > 0 ? Number(value.id) : index + 1,
                 name: String(value.name || "").trim(),
                 details: String(value.details || "").trim(),
+                imageUrl: typeof value.imageUrl === "string" ? value.imageUrl.trim() : "",
                 shippingFee: readLandmarkShippingFee(value as Partial<DeliveryLandmark> & Record<string, unknown>),
                 isActive: value.isActive !== false
             };
@@ -187,6 +192,28 @@ export function updateStoreSettings(input: Partial<StoreSettings>) {
 export function updateGcashQrUrl(gcashQrUrl: string) {
     refreshSettingsFromDisk();
     settings.gcashQrUrl = gcashQrUrl;
+    settings.updatedAt = new Date().toISOString();
+    saveSettings();
+    return settings;
+}
+
+export function updateDeliveryLandmarkImageUrl(landmarkId: number, imageUrl: string) {
+    refreshSettingsFromDisk();
+
+    const cleanImageUrl = String(imageUrl || "").trim();
+    if (!cleanImageUrl) {
+        throw new Error("Landmark image is required.");
+    }
+
+    const targetIndex = settings.deliveryLandmarks.findIndex((item) => Number(item.id) === Number(landmarkId));
+    if (targetIndex < 0) {
+        return null;
+    }
+
+    settings.deliveryLandmarks[targetIndex] = {
+        ...settings.deliveryLandmarks[targetIndex],
+        imageUrl: cleanImageUrl
+    };
     settings.updatedAt = new Date().toISOString();
     saveSettings();
     return settings;

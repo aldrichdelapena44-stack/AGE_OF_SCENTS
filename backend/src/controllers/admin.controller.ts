@@ -10,7 +10,7 @@ import {
     getAdminVerifications
 } from "../services/admin.service";
 import { approveStory, rejectStory, removeStory } from "../services/story.service";
-import { getStoreSettings, updateGcashQrUrl, updateStoreSettings } from "../services/store-settings.service";
+import { getStoreSettings, updateDeliveryLandmarkImageUrl, updateGcashQrUrl, updateStoreSettings } from "../services/store-settings.service";
 import { deleteFeedback, markFeedbackReviewed } from "../services/feedback.service";
 import { updateProduct } from "../services/product.service";
 import {
@@ -161,6 +161,20 @@ export function updateStoreGcashQr(req: RequestWithFile, res: Response) {
         return ok(res, settings, "GCash QR code updated.");
     } catch (error) {
         return fail(res, error instanceof Error ? error.message : "GCash QR upload failed.", 400);
+    }
+}
+
+
+export function updateStoreLandmarkImage(req: RequestWithFile, res: Response) {
+    try {
+        const imageUrl = req.file?.path ? toPublicProductUploadUrl(req.file.path).replace("/uploads/products/", "/uploads/settings/") : "";
+        if (!imageUrl) return fail(res, "Landmark image is required.", 400);
+
+        const settings = updateDeliveryLandmarkImageUrl(Number(req.params.id), imageUrl);
+        if (!settings) return fail(res, "Landmark not found. Save checkout settings first, then upload the photo.", 404);
+        return ok(res, settings, "Landmark photo updated.");
+    } catch (error) {
+        return fail(res, error instanceof Error ? error.message : "Landmark photo upload failed.", 400);
     }
 }
 

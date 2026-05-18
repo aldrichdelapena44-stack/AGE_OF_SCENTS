@@ -11,6 +11,7 @@ type DeliveryLandmark = {
     id: number;
     name: string;
     details?: string;
+    imageUrl?: string;
     shippingFee?: number;
     isActive: boolean;
 };
@@ -362,6 +363,16 @@ export default function CheckoutPage() {
                             <option value="CUSTOM">Other address / landmark request — admin will quote shipping</option>
                         </select>
                         {selectedLandmarkData ? <p className="field-hint">Shipping fee: PHP {shippingFee.toFixed(2)} {selectedLandmarkData.details ? `· ${selectedLandmarkData.details}` : ""}</p> : null}
+                        {selectedLandmarkData?.imageUrl ? (
+                            <div className="checkout-landmark-preview">
+                                <img src={mediaUrl(selectedLandmarkData.imageUrl, true)} alt={`${selectedLandmarkData.name} landmark`} />
+                                <div>
+                                    <strong>{selectedLandmarkData.name}</strong>
+                                    {selectedLandmarkData.details ? <p>{selectedLandmarkData.details}</p> : null}
+                                    <span>Shipping fee: PHP {shippingFee.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        ) : null}
                         {selectedLandmark === "CUSTOM" ? <p className="field-hint">Admin will review your requested place, set the delivery fee, then you can accept or reject the transaction.</p> : null}
                     </div>
 
