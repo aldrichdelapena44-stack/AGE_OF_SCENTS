@@ -5559,3 +5559,194 @@ input[type="file"]::file-selector-button {
         bottom: 16px;
     }
 }
+
+/* Final phone hero separation: show perfume image in its own carousel frame below the story card. */
+@media (max-width: 760px) {
+    .cinematic-hero {
+        min-height: auto !important;
+        height: auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        padding: 18px 0 32px !important;
+        overflow: visible !important;
+    }
+
+    .hero-carousel__slide,
+    .hero-carousel__slide.is-active {
+        opacity: 0.12 !important;
+        object-fit: cover !important;
+        object-position: center center !important;
+        transform: none !important;
+        filter: saturate(1.05) contrast(1.05) brightness(0.45) !important;
+    }
+
+    .hero-carousel::before {
+        background:
+            linear-gradient(180deg, rgba(3, 3, 2, 0.88) 0%, rgba(3, 3, 2, 0.78) 48%, rgba(3, 3, 2, 0.88) 100%),
+            radial-gradient(circle at 50% 72%, rgba(219, 178, 93, 0.16), transparent 18rem) !important;
+    }
+
+    .cinematic-hero__content--carousel {
+        position: relative !important;
+        z-index: 4 !important;
+        width: min(100% - 28px, 420px) !important;
+        min-height: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        justify-content: flex-start !important;
+        gap: 14px !important;
+        padding: 0 !important;
+        margin: 0 auto !important;
+    }
+
+    .cinematic-hero__copy,
+    .hero-copy-window {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        border-radius: 1.35rem !important;
+        overflow: hidden !important;
+    }
+
+    .hero-copy-window__body {
+        padding: 16px !important;
+    }
+
+    .cinematic-hero h1,
+    .hero-copy-window h1 {
+        font-size: clamp(2.05rem, 11.2vw, 3.15rem) !important;
+        line-height: 0.94 !important;
+        max-width: 10.5ch !important;
+        margin-bottom: 0.75rem !important;
+        letter-spacing: -0.055em !important;
+    }
+
+    .hero-lede {
+        font-size: 0.96rem !important;
+        line-height: 1.42 !important;
+        margin: 0 0 0.9rem !important;
+    }
+
+    .hero-actions {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 0.65rem !important;
+        margin-top: 0.8rem !important;
+    }
+
+    .hero-actions .btn {
+        width: 100% !important;
+        min-height: 48px !important;
+        padding: 0.85rem 1rem !important;
+        justify-content: center !important;
+    }
+
+    .hero-mobile-product-preview {
+        display: grid !important;
+        visibility: visible !important;
+        position: relative !important;
+        z-index: 5 !important;
+        width: 100% !important;
+        height: clamp(240px, 72vw, 360px) !important;
+        min-height: clamp(240px, 72vw, 360px) !important;
+        margin: 0 auto !important;
+        padding: 10px !important;
+        place-items: center !important;
+        border: 1px solid rgba(231, 214, 174, 0.52) !important;
+        border-radius: 1.5rem !important;
+        background:
+            linear-gradient(145deg, rgba(238, 196, 101, 0.16), rgba(5, 4, 3, 0.78) 44%, rgba(0, 0, 0, 0.4)),
+            radial-gradient(circle at 50% 38%, rgba(244, 201, 106, 0.22), transparent 64%) !important;
+        box-shadow: 0 22px 58px rgba(0, 0, 0, 0.44), inset 0 0 0 1px rgba(255, 255, 255, 0.04) !important;
+        overflow: hidden !important;
+        pointer-events: none !important;
+    }
+
+    .hero-mobile-product-preview::before {
+        content: "" !important;
+        position: absolute !important;
+        inset: auto auto 8% 50% !important;
+        width: min(88vw, 360px) !important;
+        height: min(88vw, 360px) !important;
+        transform: translateX(-50%) !important;
+        border-radius: 999px !important;
+        background: radial-gradient(circle, rgba(215, 180, 106, 0.24), rgba(215, 180, 106, 0.08) 45%, transparent 72%) !important;
+        filter: blur(5px) !important;
+        opacity: 0.95 !important;
+    }
+
+    .hero-mobile-product-preview__image {
+        display: block !important;
+        position: relative !important;
+        z-index: 1 !important;
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+        object-fit: contain !important;
+        object-position: center center !important;
+        transform: none !important;
+        opacity: 1 !important;
+        filter: saturate(1.15) contrast(1.08) brightness(1.14) drop-shadow(0 22px 34px rgba(0, 0, 0, 0.58)) !important;
+    }
+
+    .hero-arrow {
+        position: absolute !important;
+        top: auto !important;
+        bottom: 98px !important;
+        z-index: 8 !important;
+        width: 50px !important;
+        height: 50px !important;
+        transform: none !important;
+        background: rgba(3, 3, 2, 0.78) !important;
+        border-color: rgba(231, 214, 174, 0.56) !important;
+    }
+
+    .hero-arrow--prev { left: 14px !important; }
+    .hero-arrow--next { right: 14px !important; }
+
+    .hero-dots {
+        position: relative !important;
+        left: auto !important;
+        bottom: auto !important;
+        transform: none !important;
+        z-index: 8 !important;
+        margin: 14px auto 0 !important;
+    }
+
+    .scroll-cue {
+        position: relative !important;
+        left: auto !important;
+        bottom: auto !important;
+        transform: none !important;
+        z-index: 8 !important;
+        margin: 8px auto 0 !important;
+        width: fit-content !important;
+    }
+
+    .scroll-cue span {
+        height: 24px !important;
+    }
+}
+
+@media (max-width: 430px) {
+    .cinematic-hero__content--carousel {
+        width: calc(100% - 24px) !important;
+        gap: 12px !important;
+    }
+
+    .hero-mobile-product-preview {
+        height: clamp(230px, 74vw, 320px) !important;
+        min-height: clamp(230px, 74vw, 320px) !important;
+    }
+
+    .hero-arrow {
+        bottom: 92px !important;
+        width: 46px !important;
+        height: 46px !important;
+    }
+}
