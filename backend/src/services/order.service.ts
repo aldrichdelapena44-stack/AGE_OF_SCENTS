@@ -133,6 +133,11 @@ function loadOrders() {
 const orders: StoredOrder[] = loadOrders();
 let nextOrderId = orders.reduce((max, order) => Math.max(max, order.id), 0) + 1;
 
+function refreshOrdersFromDisk() {
+    orders.splice(0, orders.length, ...loadOrders());
+    nextOrderId = orders.reduce((max, order) => Math.max(max, order.id), 0) + 1;
+}
+
 function saveOrders() {
     ensureDataDir();
     fs.writeFileSync(ordersDataFile, JSON.stringify(orders, null, 2));
@@ -150,6 +155,7 @@ export function createCheckoutOrder(input: {
     paymentMethod: PaymentMethod;
     items: CheckoutItem[];
 }) {
+    refreshOrdersFromDisk();
     if (!Array.isArray(input.items) || input.items.length === 0) {
         throw new Error("Cart is empty.");
     }
@@ -196,6 +202,7 @@ export function createCheckoutOrder(input: {
 }
 
 export function attachPaymentToOrder(orderId: number, paymentProvider: string, paymentReference: string) {
+    refreshOrdersFromDisk();
     const order = orders.find((item) => item.id === orderId);
     if (!order) return null;
 
@@ -207,6 +214,7 @@ export function attachPaymentToOrder(orderId: number, paymentProvider: string, p
 }
 
 export function markOrderPaidByReference(reference: string) {
+    refreshOrdersFromDisk();
     const order = orders.find((item) => item.paymentReference === reference);
     if (!order) return null;
 
@@ -217,6 +225,7 @@ export function markOrderPaidByReference(reference: string) {
 }
 
 export function updateOrderStatus(orderId: number, status: OrderStatus, deliveryNote?: string, shippingFee?: number) {
+    refreshOrdersFromDisk();
     const order = orders.find((item) => item.id === orderId);
     if (!order) return null;
     order.status = normalizeStatus(status);
@@ -229,6 +238,7 @@ export function updateOrderStatus(orderId: number, status: OrderStatus, delivery
 }
 
 export function updateOrderLandmarkStatus(orderId: number, landmarkStatus: "APPROVED" | "REJECTED" | "PENDING", note?: string, shippingFee?: number) {
+    refreshOrdersFromDisk();
     const order = orders.find((item) => item.id === orderId);
     if (!order) return null;
     order.landmarkStatus = landmarkStatus;
@@ -242,6 +252,7 @@ export function updateOrderLandmarkStatus(orderId: number, landmarkStatus: "APPR
 }
 
 export function addOrderChatMessage(orderId: number, input: { senderId: number; senderName: string; senderRole: "ADMIN" | "CUSTOMER"; message: string }) {
+    refreshOrdersFromDisk();
     const order = orders.find((item) => item.id === orderId);
     if (!order) return null;
     const message = input.message.trim();
@@ -263,30 +274,35 @@ export function addOrderChatMessage(orderId: number, input: { senderId: number; 
 }
 
 export function deleteOrderFromAdmin(orderId: number) {
-    const order = orders.find((item) => item.id === orderId);
-    if (!order) return null;
-    order.adminDeleted = true;
-    order.adminDeletedAt = new Date().toISOString();
-    order.adminDeletionNote = "You're not eligible to pay. Please use a valid and transparent transaction.";
-    order.status = "CANCELLED";
-    pushSystemMessage(order, order.adminDeletionNote);
-    order.updatedAt = new Date().toISOString();
+    refreshOrdersFromDisk();
+    const index = orders.findIndex((item) => item.id === orderId);
+    if (index === -1) return null;
+    const [removed] = orders.splice(index, 1);
+    removed.adminDeleted = true;
+    removed.adminDeletedAt = new Date().toISOString();
+    removed.adminDeletionNote = "You're not eligible to pay. Please use a valid and transparent transaction.";
+    removed.status = "CANCELLED";
+    removed.updatedAt = new Date().toISOString();
     saveOrders();
-    return order;
+    return removed;
 }
 
 export function getOrdersByUser(userId: number) {
-    return orders.filter((order) => order.userId === userId).sort((a, b) => b.id - a.id);
+    refreshOrdersFromDisk();
+    return orders.filter((order) => order.userId === userId && !order.adminDeleted).sort((a, b) => b.id - a.id);
 }
 
 export function getOrderById(orderId: number) {
-    return orders.find((order) => order.id === orderId) || null;
+    refreshOrdersFromDisk();
+    return orders.find((order) => order.id === orderId && !order.adminDeleted) || null;
 }
 
 export function getAllOrders() {
+    refreshOrdersFromDisk();
     return [...orders].filter((order) => !order.adminDeleted).sort((a, b) => b.id - a.id);
 }
 
 export function countOrders() {
+    refreshOrdersFromDisk();
     return orders.filter((order) => !order.adminDeleted).length;
 }

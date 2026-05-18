@@ -37,7 +37,13 @@ function saveFeedback() {
 const feedbackRecords: FeedbackRecord[] = loadFeedback();
 let nextFeedbackId = feedbackRecords.reduce((max, item) => Math.max(max, item.id), 0) + 1;
 
+function refreshFeedbackFromDisk() {
+    feedbackRecords.splice(0, feedbackRecords.length, ...loadFeedback());
+    nextFeedbackId = feedbackRecords.reduce((max, item) => Math.max(max, item.id), 0) + 1;
+}
+
 export function submitFeedback(input: { name: string; email: string; rating: number; message: string }) {
+    refreshFeedbackFromDisk();
     const feedback: FeedbackRecord = {
         id: nextFeedbackId++,
         name: input.name.trim(),
@@ -53,14 +59,17 @@ export function submitFeedback(input: { name: string; email: string; rating: num
 }
 
 export function getAllFeedback() {
+    refreshFeedbackFromDisk();
     return [...feedbackRecords].sort((a, b) => b.id - a.id);
 }
 
 export function countNewFeedback() {
+    refreshFeedbackFromDisk();
     return feedbackRecords.filter((feedback) => feedback.status === "NEW").length;
 }
 
 export function markFeedbackReviewed(feedbackId: number) {
+    refreshFeedbackFromDisk();
     const feedback = feedbackRecords.find((item) => item.id === feedbackId);
     if (!feedback) return null;
     feedback.status = "REVIEWED";
@@ -70,6 +79,7 @@ export function markFeedbackReviewed(feedbackId: number) {
 }
 
 export function deleteFeedback(feedbackId: number) {
+    refreshFeedbackFromDisk();
     const index = feedbackRecords.findIndex((item) => item.id === feedbackId);
     if (index === -1) return null;
     const [removed] = feedbackRecords.splice(index, 1);

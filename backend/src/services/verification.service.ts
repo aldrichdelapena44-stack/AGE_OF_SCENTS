@@ -42,6 +42,11 @@ function saveSubmissions() {
 const submissions: VerificationRecord[] = loadSubmissions();
 let nextVerificationId = submissions.reduce((max, item) => Math.max(max, item.id), 0) + 1;
 
+function refreshSubmissionsFromDisk() {
+    submissions.splice(0, submissions.length, ...loadSubmissions());
+    nextVerificationId = submissions.reduce((max, item) => Math.max(max, item.id), 0) + 1;
+}
+
 function resolveUploadPath(fileUrl: string) {
     if (!fileUrl || fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) return null;
     if (path.isAbsolute(fileUrl)) return fileUrl;
@@ -58,6 +63,7 @@ function deleteLocalFile(fileUrl: string) {
 }
 
 export function submitVerification(input: { userId: number; documentType: string; fileUrl: string }) {
+    refreshSubmissionsFromDisk();
     const submission: VerificationRecord = {
         id: nextVerificationId++,
         userId: input.userId,
@@ -74,14 +80,17 @@ export function submitVerification(input: { userId: number; documentType: string
 }
 
 export function getVerificationsByUser(userId: number) {
+    refreshSubmissionsFromDisk();
     return submissions.filter((item) => item.userId === userId);
 }
 
 export function getAllVerifications() {
+    refreshSubmissionsFromDisk();
     return [...submissions].sort((a, b) => b.id - a.id);
 }
 
 export function approveVerification(verificationId: number) {
+    refreshSubmissionsFromDisk();
     const record = submissions.find((item) => item.id === verificationId);
     if (!record) return null;
     record.status = "APPROVED";
@@ -91,6 +100,7 @@ export function approveVerification(verificationId: number) {
 }
 
 export function rejectVerification(verificationId: number) {
+    refreshSubmissionsFromDisk();
     const record = submissions.find((item) => item.id === verificationId);
     if (!record) return null;
     record.status = "REJECTED";
@@ -100,6 +110,7 @@ export function rejectVerification(verificationId: number) {
 }
 
 export function keepVerificationFile(verificationId: number) {
+    refreshSubmissionsFromDisk();
     const record = submissions.find((item) => item.id === verificationId);
     if (!record) return null;
     if (record.fileStatus === "REMOVED") throw new Error("This file has already been removed from storage.");
@@ -110,6 +121,7 @@ export function keepVerificationFile(verificationId: number) {
 }
 
 export function removeVerificationFile(verificationId: number) {
+    refreshSubmissionsFromDisk();
     const record = submissions.find((item) => item.id === verificationId);
     if (!record) return null;
     if (record.fileStatus !== "REMOVED" && record.fileUrl) {
@@ -124,11 +136,13 @@ export function removeVerificationFile(verificationId: number) {
 }
 
 export function countPendingVerifications() {
+    refreshSubmissionsFromDisk();
     return submissions.filter((item) => item.status === "PENDING").length;
 }
 
 
 export function deleteVerificationSubmission(verificationId: number) {
+    refreshSubmissionsFromDisk();
     const index = submissions.findIndex((item) => item.id === verificationId);
     if (index < 0) return null;
     const [record] = submissions.splice(index, 1);
@@ -140,6 +154,7 @@ export function deleteVerificationSubmission(verificationId: number) {
 }
 
 export function syncUserVerificationStatus(userId: number) {
+    refreshSubmissionsFromDisk();
     const userSubmissions = submissions.filter((item) => item.userId === userId);
 
     const hasApproved = userSubmissions.some((item) => item.status === "APPROVED");
@@ -156,6 +171,7 @@ export function syncUserVerificationStatus(userId: number) {
 }
 
 export function syncAllUserVerificationStatuses() {
+    refreshSubmissionsFromDisk();
     const userIds = Array.from(new Set(submissions.map((item) => item.userId)));
 
     return userIds.map((userId) => syncUserVerificationStatus(userId));

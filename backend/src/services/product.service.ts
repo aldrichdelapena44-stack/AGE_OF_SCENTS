@@ -186,24 +186,33 @@ function sanitizeText(value: string, fallback: string) {
 
 const products: ProductRecord[] = loadProducts();
 
+function refreshProductsFromDisk() {
+    products.splice(0, products.length, ...loadProducts());
+}
+
 export function getAllProducts() {
+    refreshProductsFromDisk();
     return products.filter((product) => product.isActive);
 }
 
 export function getAdminProducts() {
+    refreshProductsFromDisk();
     return [...products].sort((a, b) => a.id - b.id);
 }
 
 export function getProductBySlug(slug: string) {
+    refreshProductsFromDisk();
     return products.find((product) => product.slug === slug && product.isActive) || null;
 }
 
 export function getProductById(id: number) {
+    refreshProductsFromDisk();
     return products.find((product) => product.id === id) || null;
 }
 
 export function updateProduct(productId: number, input: ProductUpdateInput) {
-    const product = getProductById(productId);
+    refreshProductsFromDisk();
+    const product = products.find((item) => item.id === productId) || null;
     if (!product) return null;
 
     if (typeof input.name === "string") product.name = sanitizeText(input.name, product.name);
@@ -241,11 +250,13 @@ export function updateProduct(productId: number, input: ProductUpdateInput) {
 }
 
 export function countProducts() {
+    refreshProductsFromDisk();
     return products.length;
 }
 
 export function decreaseProductStock(productId: number, quantity: number) {
-    const product = getProductById(productId);
+    refreshProductsFromDisk();
+    const product = products.find((item) => item.id === productId) || null;
 
     if (!product || !product.isActive) {
         throw new Error(`Product ${productId} was not found.`);

@@ -105,6 +105,10 @@ function loadSettings() {
 
 let settings: StoreSettings = loadSettings();
 
+function refreshSettingsFromDisk() {
+    settings = loadSettings();
+}
+
 function saveSettings() {
     ensureDataDir();
     fs.writeFileSync(settingsDataFile, JSON.stringify(settings, null, 2));
@@ -128,10 +132,12 @@ function normalizeLandmarks(input: unknown): DeliveryLandmark[] {
 }
 
 export function getStoreSettings() {
+    refreshSettingsFromDisk();
     return settings;
 }
 
 export function getPublicCheckoutSettings() {
+    refreshSettingsFromDisk();
     return {
         gcashNumber: settings.gcashNumber,
         gcashQrUrl: settings.gcashQrUrl,
@@ -143,12 +149,14 @@ export function getPublicCheckoutSettings() {
 }
 
 export function getDeliveryLandmarkByName(name?: string) {
+    refreshSettingsFromDisk();
     const cleanName = String(name || "").trim().toLowerCase();
     if (!cleanName) return null;
     return settings.deliveryLandmarks.find((item) => item.isActive && item.name.trim().toLowerCase() === cleanName) || null;
 }
 
 export function updateStoreSettings(input: Partial<StoreSettings>) {
+    refreshSettingsFromDisk();
     settings = {
         ...settings,
         gcashNumber:
@@ -177,6 +185,7 @@ export function updateStoreSettings(input: Partial<StoreSettings>) {
 }
 
 export function updateGcashQrUrl(gcashQrUrl: string) {
+    refreshSettingsFromDisk();
     settings.gcashQrUrl = gcashQrUrl;
     settings.updatedAt = new Date().toISOString();
     saveSettings();

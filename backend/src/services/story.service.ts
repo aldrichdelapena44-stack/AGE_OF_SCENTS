@@ -37,6 +37,11 @@ function loadStories() {
 const stories: StoryRecord[] = loadStories();
 let nextStoryId = stories.reduce((max, story) => Math.max(max, story.id), 0) + 1;
 
+function refreshStoriesFromDisk() {
+    stories.splice(0, stories.length, ...loadStories());
+    nextStoryId = stories.reduce((max, story) => Math.max(max, story.id), 0) + 1;
+}
+
 function saveStories() {
     ensureDataDir();
     fs.writeFileSync(storyDataFile, JSON.stringify(stories, null, 2));
@@ -47,22 +52,26 @@ function isActiveStory(story: StoryRecord) {
 }
 
 export function getPublicStories() {
+    refreshStoriesFromDisk();
     return stories
         .filter(isActiveStory)
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
 export function getStoriesByUser(userId: number) {
+    refreshStoriesFromDisk();
     return stories
         .filter((story) => story.userId === userId && new Date(story.expiresAt).getTime() > Date.now())
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
 export function getAdminStories() {
+    refreshStoriesFromDisk();
     return [...stories].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
 export function countPendingStories() {
+    refreshStoriesFromDisk();
     return stories.filter((story) => story.status === "PENDING").length;
 }
 
@@ -72,6 +81,7 @@ export function createStory(input: {
     imageUrl: string;
     note?: string;
 }) {
+    refreshStoriesFromDisk();
     const note = (input.note || "").trim();
 
     if (!input.imageUrl) throw new Error("Story photo is required.");
@@ -95,6 +105,7 @@ export function createStory(input: {
 }
 
 export function updateOwnStory(storyId: number, userId: number, input: { imageUrl?: string; note?: string }) {
+    refreshStoriesFromDisk();
     const story = stories.find((item) => item.id === storyId && item.userId === userId);
     if (!story) return null;
     if (new Date(story.expiresAt).getTime() <= Date.now()) throw new Error("This story already expired.");
@@ -113,6 +124,7 @@ export function updateOwnStory(storyId: number, userId: number, input: { imageUr
 }
 
 export function removeOwnStory(storyId: number, userId: number) {
+    refreshStoriesFromDisk();
     const index = stories.findIndex((item) => item.id === storyId && item.userId === userId);
     if (index === -1) return null;
     const [removed] = stories.splice(index, 1);
@@ -121,6 +133,7 @@ export function removeOwnStory(storyId: number, userId: number) {
 }
 
 export function approveStory(storyId: number) {
+    refreshStoriesFromDisk();
     const story = stories.find((item) => item.id === storyId);
     if (!story) return null;
     story.status = "APPROVED";
@@ -131,6 +144,7 @@ export function approveStory(storyId: number) {
 }
 
 export function rejectStory(storyId: number, reason?: string) {
+    refreshStoriesFromDisk();
     const story = stories.find((item) => item.id === storyId);
     if (!story) return null;
     story.status = "REJECTED";
@@ -141,6 +155,7 @@ export function rejectStory(storyId: number, reason?: string) {
 }
 
 export function removeStory(storyId: number) {
+    refreshStoriesFromDisk();
     const index = stories.findIndex((item) => item.id === storyId);
     if (index === -1) return null;
     const [removed] = stories.splice(index, 1);
