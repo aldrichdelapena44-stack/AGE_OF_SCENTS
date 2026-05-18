@@ -14,6 +14,19 @@ type VerificationRecord = {
     createdAt: string;
 };
 
+
+const DOCUMENT_TYPE_LABELS: Record<string, string> = {
+    NATIONAL_ID: "National ID",
+    SCHOOL_ID: "School ID",
+    DRIVERS_LICENSE: "Driver's License",
+    PASSPORT: "Passport",
+    OTHER: "Other",
+};
+
+function formatDocumentType(documentType: string) {
+    return DOCUMENT_TYPE_LABELS[documentType] || documentType.replaceAll("_", " ");
+}
+
 export default function AgeVerificationPage() {
     const [documentType, setDocumentType] = useState("NATIONAL_ID");
     const [idImage, setIdImage] = useState<File | null>(null);
@@ -160,6 +173,7 @@ export default function AgeVerificationPage() {
                         onChange={(event) => setDocumentType(event.target.value)}
                     >
                         <option value="NATIONAL_ID">National ID</option>
+                        <option value="SCHOOL_ID">School ID</option>
                         <option value="DRIVERS_LICENSE">Driver&apos;s License</option>
                         <option value="PASSPORT">Passport</option>
                         <option value="OTHER">Other</option>
@@ -196,7 +210,7 @@ export default function AgeVerificationPage() {
                         {records.map((record) => (
                             <div className="card verification-record" key={record.id}>
                                 <p>
-                                    <strong>Document:</strong> {record.documentType}
+                                    <strong>Document:</strong> {formatDocumentType(record.documentType)}
                                 </p>
                                 <p>
                                     <strong>Status:</strong> {record.status}

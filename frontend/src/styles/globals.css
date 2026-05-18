@@ -5309,3 +5309,39 @@ input[type="file"]::file-selector-button {
         overflow-wrap: anywhere !important;
     }
 }
+
+
+/* Mobile hero product placement: keep desktop view unchanged.
+   On phones, push the carousel perfume image lower so it is visible below
+   the story card instead of sitting directly behind the text. */
+@media (max-width: 760px) {
+    .cinematic-hero {
+        overflow: hidden !important;
+    }
+
+    .hero-carousel__slide {
+        object-fit: contain !important;
+        object-position: center bottom !important;
+        transform: translate3d(0, 24svh, 0) scale(0.92) !important;
+        opacity: 0 !important;
+        filter: saturate(1.06) contrast(1.08) brightness(0.78) !important;
+    }
+
+    .hero-carousel__slide.is-active {
+        opacity: 0.72 !important;
+        transform: translate3d(0, 24svh, 0) scale(0.92) !important;
+    }
+
+    .hero-carousel::before {
+        background:
+            linear-gradient(180deg, rgba(3, 3, 2, 0.88) 0%, rgba(3, 3, 2, 0.74) 44%, rgba(3, 3, 2, 0.28) 76%, rgba(3, 3, 2, 0.78) 100%),
+            linear-gradient(90deg, rgba(3, 3, 2, 0.9) 0%, rgba(3, 3, 2, 0.58) 46%, rgba(3, 3, 2, 0.22) 100%) !important;
+    }
+}
+
+@media (max-width: 420px) {
+    .hero-carousel__slide,
+    .hero-carousel__slide.is-active {
+        transform: translate3d(0, 27svh, 0) scale(0.88) !important;
+    }
+}
