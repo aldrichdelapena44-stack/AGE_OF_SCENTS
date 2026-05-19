@@ -8,13 +8,13 @@ type RequestWithUser = Request & {
     };
 };
 
-export function getProfile(req: RequestWithUser, res: Response) {
+export async function getProfile(req: RequestWithUser, res: Response) {
     try {
         if (!req.user) {
             return fail(res, "Unauthorized.", 401);
         }
 
-        const profile = getUserProfile(req.user.id);
+        const profile = await getUserProfile(req.user.id);
         return ok(res, profile, "Profile fetched.");
     } catch (error) {
         return fail(

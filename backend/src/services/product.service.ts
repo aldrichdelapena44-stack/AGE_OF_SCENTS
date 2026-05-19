@@ -1,5 +1,4 @@
-import fs from "fs";
-import path from "path";
+import { supabase } from "../config/supabase";
 
 export type ProductCategory = "Men" | "Women" | "Unisex";
 
@@ -33,8 +32,6 @@ export type ProductUpdateInput = {
 };
 
 const now = new Date().toISOString();
-const dataDir = path.join(process.cwd(), "data");
-const productDataFile = path.join(dataDir, "products.json");
 
 function normalizeCategory(value?: string): ProductCategory {
     const clean = value?.trim().toLowerCase();
@@ -51,8 +48,7 @@ const defaultProducts: ProductRecord[] = [
         id: 1,
         slug: "aurum-noir-parfum",
         name: "Aurum Noir Parfum",
-        description:
-            "A velvet evening fragrance built around black orchid, smoked vanilla, and warm amber.",
+        description: "A velvet evening fragrance built around black orchid, smoked vanilla, and warm amber.",
         scentNotes: "Black orchid, smoked vanilla, amber, cedarwood",
         volume: "50 ml",
         mood: "Evening signature",
@@ -67,8 +63,7 @@ const defaultProducts: ProductRecord[] = [
         id: 2,
         slug: "rose-velours-eau-de-parfum",
         name: "Rose Velours Eau de Parfum",
-        description:
-            "A luminous rose composition softened with lychee, iris, and white musk.",
+        description: "A luminous rose composition softened with lychee, iris, and white musk.",
         scentNotes: "Damask rose, lychee, iris, white musk",
         volume: "75 ml",
         mood: "Romantic floral",
@@ -83,8 +78,7 @@ const defaultProducts: ProductRecord[] = [
         id: 3,
         slug: "citrus-atelier-eau-de-parfum",
         name: "Citrus Atelier Eau de Parfum",
-        description:
-            "Fresh bergamot and neroli wrapped in tea leaves, vetiver, and sunlit woods.",
+        description: "Fresh bergamot and neroli wrapped in tea leaves, vetiver, and sunlit woods.",
         scentNotes: "Bergamot, neroli, green tea, vetiver",
         volume: "50 ml",
         mood: "Daylight elegance",
@@ -99,8 +93,7 @@ const defaultProducts: ProductRecord[] = [
         id: 4,
         slug: "oud-imperial-extrait",
         name: "Oud Imperial Extrait",
-        description:
-            "A deep extrait with saffron, incense, oud wood, and polished leather warmth.",
+        description: "A deep extrait with saffron, incense, oud wood, and polished leather warmth.",
         scentNotes: "Saffron, incense, oud, leather",
         volume: "30 ml",
         mood: "Opulent depth",
@@ -115,8 +108,7 @@ const defaultProducts: ProductRecord[] = [
         id: 5,
         slug: "pearl-musk-eau-de-parfum",
         name: "Pearl Musk Eau de Parfum",
-        description:
-            "A soft skin scent of pear blossom, clean musk, sandalwood, and creamy iris.",
+        description: "A soft skin scent of pear blossom, clean musk, sandalwood, and creamy iris.",
         scentNotes: "Pear blossom, clean musk, iris, sandalwood",
         volume: "50 ml",
         mood: "Soft intimacy",
@@ -131,8 +123,7 @@ const defaultProducts: ProductRecord[] = [
         id: 6,
         slug: "amber-silk-parfum",
         name: "Amber Silk Parfum",
-        description:
-            "A smooth amber perfume with tonka bean, labdanum, cashmere wood, and golden resin.",
+        description: "A smooth amber perfume with tonka bean, labdanum, cashmere wood, and golden resin.",
         scentNotes: "Tonka bean, labdanum, cashmere wood, resin",
         volume: "50 ml",
         mood: "Warm luxury",
@@ -145,38 +136,107 @@ const defaultProducts: ProductRecord[] = [
     }
 ];
 
-function ensureDataDir() {
-    fs.mkdirSync(dataDir, { recursive: true });
+function safeMoney(value: unknown) {
+    const amount = Number(value ?? 0);
+    if (!Number.isFinite(amount) || amount < 0) return 0;
+    return Math.round(amount * 100) / 100;
 }
 
-function loadProducts() {
-    try {
-        if (!fs.existsSync(productDataFile)) return [...defaultProducts];
-
-        const parsed = JSON.parse(fs.readFileSync(productDataFile, "utf8")) as Partial<ProductRecord>[];
-
-        if (!Array.isArray(parsed) || parsed.length === 0) {
-            return [...defaultProducts];
-        }
-
-        return parsed.map((product, index) => {
-            const fallback = defaultProducts[index] || defaultProducts[0];
-
-            return {
-                ...fallback,
-                ...product,
-                category: normalizeCategory(product.category),
-                updatedAt: product.updatedAt || now
-            } as ProductRecord;
-        });
-    } catch {
-        return [...defaultProducts];
-    }
+function toRow(product: ProductRecord) {
+    return {
+        id: product.id,
+        slug: product.slug,
+        name: product.name,
+        description: product.description,
+        scent_notes: product.scentNotes,
+        volume: product.volume,
+        mood: product.mood,
+        price: product.price,
+        stock: product.stock,
+        image_url: product.imageUrl,
+        is_active: product.isActive,
+        category: product.category,
+        updated_at: product.updatedAt
+    };
 }
 
-function saveProducts() {
-    ensureDataDir();
-    fs.writeFileSync(productDataFile, JSON.stringify(products, null, 2));
+function fromRow(row: any): ProductRecord {
+    return {
+        id: Number(row.id),
+        slug: String(row.slug || ""),
+        name: String(row.name || ""),
+        description: String(row.description || ""),
+        scentNotes: String(row.scent_notes || ""),
+        volume: String(row.volume || ""),
+        mood: String(row.mood || ""),
+        price: safeMoney(row.price),
+        stock: Number(row.stock || 0),
+        imageUrl: String(row.image_url || ""),
+        isActive: row.is_active !== false,
+        category: normalizeCategory(row.category),
+        updatedAt: String(row.updated_at || new Date().toISOString())
+    };
+}
+
+async function ensureDefaultProducts() {
+    const { count, error } = await supabase
+        .from("products")
+        .select("id", { count: "exact", head: true });
+
+    if (error) throw new Error(error.message);
+
+    if ((count || 0) > 0) return;
+
+    const { error: insertError } = await supabase
+        .from("products")
+        .upsert(defaultProducts.map(toRow), { onConflict: "id" });
+
+    if (insertError) throw new Error(insertError.message);
+}
+
+async function selectProducts(includeHidden: boolean) {
+    await ensureDefaultProducts();
+
+    let query = supabase.from("products").select("*").order("id", { ascending: true });
+    if (!includeHidden) query = query.eq("is_active", true);
+
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+
+    return (data || []).map(fromRow);
+}
+
+export async function getAllProducts() {
+    return selectProducts(false);
+}
+
+export async function getAdminProducts() {
+    return selectProducts(true);
+}
+
+export async function getProductBySlug(slug: string) {
+    await ensureDefaultProducts();
+    const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("slug", slug)
+        .eq("is_active", true)
+        .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data ? fromRow(data) : null;
+}
+
+export async function getProductById(id: number) {
+    await ensureDefaultProducts();
+    const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data ? fromRow(data) : null;
 }
 
 function sanitizeText(value: string, fallback: string) {
@@ -184,54 +244,29 @@ function sanitizeText(value: string, fallback: string) {
     return trimmed.length > 0 ? trimmed : fallback;
 }
 
-const products: ProductRecord[] = loadProducts();
+export async function updateProduct(productId: number, input: ProductUpdateInput) {
+    const current = await getProductById(productId);
+    if (!current) return null;
 
-function refreshProductsFromDisk() {
-    products.splice(0, products.length, ...loadProducts());
-}
-
-export function getAllProducts() {
-    refreshProductsFromDisk();
-    return products.filter((product) => product.isActive);
-}
-
-export function getAdminProducts() {
-    refreshProductsFromDisk();
-    return [...products].sort((a, b) => a.id - b.id);
-}
-
-export function getProductBySlug(slug: string) {
-    refreshProductsFromDisk();
-    return products.find((product) => product.slug === slug && product.isActive) || null;
-}
-
-export function getProductById(id: number) {
-    refreshProductsFromDisk();
-    return products.find((product) => product.id === id) || null;
-}
-
-export function updateProduct(productId: number, input: ProductUpdateInput) {
-    refreshProductsFromDisk();
-    const product = products.find((item) => item.id === productId) || null;
-    if (!product) return null;
-
-    if (typeof input.name === "string") product.name = sanitizeText(input.name, product.name);
-    if (typeof input.description === "string") product.description = sanitizeText(input.description, product.description);
-    if (typeof input.scentNotes === "string") product.scentNotes = sanitizeText(input.scentNotes, product.scentNotes);
-    if (typeof input.imageUrl === "string") product.imageUrl = sanitizeText(input.imageUrl, product.imageUrl);
-    if (typeof input.volume === "string") product.volume = sanitizeText(input.volume, product.volume);
-    if (typeof input.mood === "string") product.mood = sanitizeText(input.mood, product.mood);
-
-    if (typeof input.category === "string") {
-        product.category = normalizeCategory(input.category);
-    }
+    const next: ProductRecord = {
+        ...current,
+        name: typeof input.name === "string" ? sanitizeText(input.name, current.name) : current.name,
+        description: typeof input.description === "string" ? sanitizeText(input.description, current.description) : current.description,
+        scentNotes: typeof input.scentNotes === "string" ? sanitizeText(input.scentNotes, current.scentNotes) : current.scentNotes,
+        imageUrl: typeof input.imageUrl === "string" ? sanitizeText(input.imageUrl, current.imageUrl) : current.imageUrl,
+        volume: typeof input.volume === "string" ? sanitizeText(input.volume, current.volume) : current.volume,
+        mood: typeof input.mood === "string" ? sanitizeText(input.mood, current.mood) : current.mood,
+        category: typeof input.category === "string" ? normalizeCategory(input.category) : current.category,
+        isActive: typeof input.isActive === "boolean" ? input.isActive : current.isActive,
+        updatedAt: new Date().toISOString()
+    };
 
     if (typeof input.price !== "undefined") {
         const price = Number(input.price);
         if (!Number.isFinite(price) || price <= 0) {
             throw new Error("Product price must be a positive number.");
         }
-        product.price = Math.round(price * 100) / 100;
+        next.price = Math.round(price * 100) / 100;
     }
 
     if (typeof input.stock !== "undefined") {
@@ -239,39 +274,44 @@ export function updateProduct(productId: number, input: ProductUpdateInput) {
         if (!Number.isInteger(stock) || stock < 0) {
             throw new Error("Product stock must be a whole number of zero or greater.");
         }
-        product.stock = stock;
+        next.stock = stock;
     }
 
-    if (typeof input.isActive === "boolean") product.isActive = input.isActive;
+    const { data, error } = await supabase
+        .from("products")
+        .upsert(toRow(next), { onConflict: "id" })
+        .select("*")
+        .single();
 
-    product.updatedAt = new Date().toISOString();
-    saveProducts();
-    return product;
+    if (error) throw new Error(error.message);
+    return fromRow(data);
 }
 
-export function countProducts() {
-    refreshProductsFromDisk();
-    return products.length;
+export async function countProducts() {
+    await ensureDefaultProducts();
+    const { count, error } = await supabase
+        .from("products")
+        .select("id", { count: "exact", head: true });
+
+    if (error) throw new Error(error.message);
+    return count || 0;
 }
 
-export function decreaseProductStock(productId: number, quantity: number) {
-    refreshProductsFromDisk();
-    const product = products.find((item) => item.id === productId) || null;
-
-    if (!product || !product.isActive) {
-        throw new Error(`Product ${productId} was not found.`);
-    }
-
+export async function decreaseProductStock(productId: number, quantity: number) {
     if (!Number.isInteger(quantity) || quantity <= 0) {
         throw new Error("Quantity must be a positive whole number.");
+    }
+
+    const product = await getProductById(productId);
+    if (!product || !product.isActive) {
+        throw new Error(`Product ${productId} was not found.`);
     }
 
     if (product.stock < quantity) {
         throw new Error(`${product.name} only has ${product.stock} item(s) left in stock.`);
     }
 
-    product.stock -= quantity;
-    product.updatedAt = new Date().toISOString();
-    saveProducts();
-    return product;
+    return updateProduct(productId, {
+        stock: product.stock - quantity
+    });
 }

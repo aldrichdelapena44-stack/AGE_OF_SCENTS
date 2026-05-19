@@ -1,5 +1,4 @@
-import fs from "fs";
-import path from "path";
+import { supabase } from "../config/supabase";
 
 export type StoryStatus = "PENDING" | "APPROVED" | "REJECTED";
 
@@ -16,149 +15,224 @@ export type StoryRecord = {
     rejectionReason?: string;
 };
 
-const dataDir = path.join(process.cwd(), "data");
-const storyDataFile = path.join(dataDir, "stories.json");
 const STORY_TTL_MS = 24 * 60 * 60 * 1000;
 
-function ensureDataDir() {
-    fs.mkdirSync(dataDir, { recursive: true });
+function normalizeStatus(status?: string): StoryStatus {
+    if (status === "APPROVED" || status === "REJECTED") return status;
+    return "PENDING";
 }
 
-function loadStories() {
-    try {
-        if (!fs.existsSync(storyDataFile)) return [] as StoryRecord[];
-        const parsed = JSON.parse(fs.readFileSync(storyDataFile, "utf8")) as StoryRecord[];
-        return Array.isArray(parsed) ? parsed : [];
-    } catch {
-        return [] as StoryRecord[];
-    }
+function fromRow(row: any): StoryRecord {
+    return {
+        id: Number(row.id),
+        userId: Number(row.user_id || 0),
+        userName: String(row.user_name || "AGE OF SCENT Client"),
+        imageUrl: String(row.image_url || ""),
+        note: String(row.note || ""),
+        status: normalizeStatus(row.status),
+        createdAt: String(row.created_at || new Date().toISOString()),
+        expiresAt: String(row.expires_at || new Date(Date.now() + STORY_TTL_MS).toISOString()),
+        reviewedAt: row.updated_at || undefined,
+        rejectionReason: row.admin_note || undefined
+    };
 }
 
-const stories: StoryRecord[] = loadStories();
-let nextStoryId = stories.reduce((max, story) => Math.max(max, story.id), 0) + 1;
+async function nextStoryId() {
+    const { data, error } = await supabase
+        .from("stories")
+        .select("id")
+        .order("id", { ascending: false })
+        .limit(1);
 
-function refreshStoriesFromDisk() {
-    stories.splice(0, stories.length, ...loadStories());
-    nextStoryId = stories.reduce((max, story) => Math.max(max, story.id), 0) + 1;
+    if (error) throw new Error(error.message);
+    return Number(data?.[0]?.id || 0) + 1;
 }
 
-function saveStories() {
-    ensureDataDir();
-    fs.writeFileSync(storyDataFile, JSON.stringify(stories, null, 2));
+export async function getPublicStories() {
+    const { data, error } = await supabase
+        .from("stories")
+        .select("*")
+        .eq("status", "APPROVED")
+        .is("deleted_at", null)
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false });
+
+    if (error) throw new Error(error.message);
+    return (data || []).map(fromRow);
 }
 
-function isActiveStory(story: StoryRecord) {
-    return story.status === "APPROVED" && new Date(story.expiresAt).getTime() > Date.now();
+export async function getStoriesByUser(userId: number) {
+    const { data, error } = await supabase
+        .from("stories")
+        .select("*")
+        .eq("user_id", userId)
+        .is("deleted_at", null)
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false });
+
+    if (error) throw new Error(error.message);
+    return (data || []).map(fromRow);
 }
 
-export function getPublicStories() {
-    refreshStoriesFromDisk();
-    return stories
-        .filter(isActiveStory)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+export async function getAdminStories() {
+    const { data, error } = await supabase
+        .from("stories")
+        .select("*")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false });
+
+    if (error) throw new Error(error.message);
+    return (data || []).map(fromRow);
 }
 
-export function getStoriesByUser(userId: number) {
-    refreshStoriesFromDisk();
-    return stories
-        .filter((story) => story.userId === userId && new Date(story.expiresAt).getTime() > Date.now())
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+export async function countPendingStories() {
+    const { count, error } = await supabase
+        .from("stories")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "PENDING")
+        .is("deleted_at", null);
+
+    if (error) throw new Error(error.message);
+    return count || 0;
 }
 
-export function getAdminStories() {
-    refreshStoriesFromDisk();
-    return [...stories].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-}
-
-export function countPendingStories() {
-    refreshStoriesFromDisk();
-    return stories.filter((story) => story.status === "PENDING").length;
-}
-
-export function createStory(input: {
+export async function createStory(input: {
     userId: number;
     userName: string;
     imageUrl: string;
     note?: string;
 }) {
-    refreshStoriesFromDisk();
     const note = (input.note || "").trim();
 
     if (!input.imageUrl) throw new Error("Story photo is required.");
     if (note.length > 240) throw new Error("Story note must be 240 characters or less.");
 
     const createdAt = new Date();
-    const story: StoryRecord = {
-        id: nextStoryId++,
-        userId: input.userId,
-        userName: input.userName.trim() || "AGE OF SCENT Client",
-        imageUrl: input.imageUrl,
-        note,
-        status: "PENDING",
-        createdAt: createdAt.toISOString(),
-        expiresAt: new Date(createdAt.getTime() + STORY_TTL_MS).toISOString()
-    };
+    const { data, error } = await supabase
+        .from("stories")
+        .insert({
+            id: await nextStoryId(),
+            user_id: input.userId,
+            user_name: input.userName.trim() || "AGE OF SCENT Client",
+            image_url: input.imageUrl,
+            note,
+            status: "PENDING",
+            created_at: createdAt.toISOString(),
+            updated_at: createdAt.toISOString(),
+            expires_at: new Date(createdAt.getTime() + STORY_TTL_MS).toISOString()
+        })
+        .select("*")
+        .single();
 
-    stories.push(story);
-    saveStories();
-    return story;
+    if (error) throw new Error(error.message);
+    return fromRow(data);
 }
 
-export function updateOwnStory(storyId: number, userId: number, input: { imageUrl?: string; note?: string }) {
-    refreshStoriesFromDisk();
-    const story = stories.find((item) => item.id === storyId && item.userId === userId);
+async function getStoryForUser(storyId: number, userId: number) {
+    const { data, error } = await supabase
+        .from("stories")
+        .select("*")
+        .eq("id", storyId)
+        .eq("user_id", userId)
+        .is("deleted_at", null)
+        .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data ? fromRow(data) : null;
+}
+
+export async function updateOwnStory(storyId: number, userId: number, input: { imageUrl?: string; note?: string }) {
+    const story = await getStoryForUser(storyId, userId);
     if (!story) return null;
     if (new Date(story.expiresAt).getTime() <= Date.now()) throw new Error("This story already expired.");
+
+    const updates: Record<string, unknown> = {
+        status: "PENDING",
+        updated_at: new Date().toISOString(),
+        admin_note: null
+    };
 
     if (typeof input.note === "string") {
         const note = input.note.trim();
         if (note.length > 240) throw new Error("Story note must be 240 characters or less.");
-        story.note = note;
+        updates.note = note;
     }
-    if (input.imageUrl) story.imageUrl = input.imageUrl;
-    story.status = "PENDING";
-    story.reviewedAt = undefined;
-    story.rejectionReason = undefined;
-    saveStories();
-    return story;
+
+    if (input.imageUrl) updates.image_url = input.imageUrl;
+
+    const { data, error } = await supabase
+        .from("stories")
+        .update(updates)
+        .eq("id", storyId)
+        .eq("user_id", userId)
+        .select("*")
+        .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data ? fromRow(data) : null;
 }
 
-export function removeOwnStory(storyId: number, userId: number) {
-    refreshStoriesFromDisk();
-    const index = stories.findIndex((item) => item.id === storyId && item.userId === userId);
-    if (index === -1) return null;
-    const [removed] = stories.splice(index, 1);
-    saveStories();
-    return removed;
+export async function removeOwnStory(storyId: number, userId: number) {
+    const { data, error } = await supabase
+        .from("stories")
+        .update({
+            deleted_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", storyId)
+        .eq("user_id", userId)
+        .select("*")
+        .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data ? fromRow(data) : null;
 }
 
-export function approveStory(storyId: number) {
-    refreshStoriesFromDisk();
-    const story = stories.find((item) => item.id === storyId);
-    if (!story) return null;
-    story.status = "APPROVED";
-    story.reviewedAt = new Date().toISOString();
-    story.rejectionReason = undefined;
-    saveStories();
-    return story;
+export async function approveStory(storyId: number) {
+    const { data, error } = await supabase
+        .from("stories")
+        .update({
+            status: "APPROVED",
+            admin_note: null,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", storyId)
+        .is("deleted_at", null)
+        .select("*")
+        .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data ? fromRow(data) : null;
 }
 
-export function rejectStory(storyId: number, reason?: string) {
-    refreshStoriesFromDisk();
-    const story = stories.find((item) => item.id === storyId);
-    if (!story) return null;
-    story.status = "REJECTED";
-    story.reviewedAt = new Date().toISOString();
-    story.rejectionReason = reason?.trim() || "Rejected by admin.";
-    saveStories();
-    return story;
+export async function rejectStory(storyId: number, reason?: string) {
+    const { data, error } = await supabase
+        .from("stories")
+        .update({
+            status: "REJECTED",
+            admin_note: reason?.trim() || "Rejected by admin.",
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", storyId)
+        .is("deleted_at", null)
+        .select("*")
+        .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data ? fromRow(data) : null;
 }
 
-export function removeStory(storyId: number) {
-    refreshStoriesFromDisk();
-    const index = stories.findIndex((item) => item.id === storyId);
-    if (index === -1) return null;
-    const [removed] = stories.splice(index, 1);
-    saveStories();
-    return removed;
+export async function removeStory(storyId: number) {
+    const { data, error } = await supabase
+        .from("stories")
+        .update({
+            deleted_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", storyId)
+        .select("*")
+        .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data ? fromRow(data) : null;
 }

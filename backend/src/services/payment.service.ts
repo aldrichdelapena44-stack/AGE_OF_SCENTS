@@ -8,7 +8,7 @@ export async function createGcashCheckout(order: StoredOrder) {
         description: `AGE OF SCENT perfume order #${order.id}`
     });
 
-    attachPaymentToOrder(order.id, payment.provider, payment.providerReference);
+    await attachPaymentToOrder(order.id, payment.provider, payment.providerReference);
 
     return payment;
 }

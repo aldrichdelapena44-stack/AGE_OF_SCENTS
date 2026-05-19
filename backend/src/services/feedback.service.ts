@@ -1,5 +1,4 @@
-import fs from "fs";
-import path from "path";
+import { supabase } from "../config/supabase";
 
 export type FeedbackRecord = {
     id: number;
@@ -12,77 +11,101 @@ export type FeedbackRecord = {
     reviewedAt?: string;
 };
 
-const dataDir = path.join(process.cwd(), "data");
-const feedbackDataFile = path.join(dataDir, "feedback.json");
-
-function ensureDataDir() {
-    fs.mkdirSync(dataDir, { recursive: true });
-}
-
-function loadFeedback() {
-    try {
-        if (!fs.existsSync(feedbackDataFile)) return [] as FeedbackRecord[];
-        const parsed = JSON.parse(fs.readFileSync(feedbackDataFile, "utf8")) as FeedbackRecord[];
-        return Array.isArray(parsed) ? parsed : [];
-    } catch {
-        return [] as FeedbackRecord[];
-    }
-}
-
-function saveFeedback() {
-    ensureDataDir();
-    fs.writeFileSync(feedbackDataFile, JSON.stringify(feedbackRecords, null, 2));
-}
-
-const feedbackRecords: FeedbackRecord[] = loadFeedback();
-let nextFeedbackId = feedbackRecords.reduce((max, item) => Math.max(max, item.id), 0) + 1;
-
-function refreshFeedbackFromDisk() {
-    feedbackRecords.splice(0, feedbackRecords.length, ...loadFeedback());
-    nextFeedbackId = feedbackRecords.reduce((max, item) => Math.max(max, item.id), 0) + 1;
-}
-
-export function submitFeedback(input: { name: string; email: string; rating: number; message: string }) {
-    refreshFeedbackFromDisk();
-    const feedback: FeedbackRecord = {
-        id: nextFeedbackId++,
-        name: input.name.trim(),
-        email: input.email.trim().toLowerCase(),
-        rating: input.rating,
-        message: input.message.trim(),
-        status: "NEW",
-        createdAt: new Date().toISOString()
+function fromRow(row: any): FeedbackRecord {
+    return {
+        id: Number(row.id),
+        name: String(row.name || ""),
+        email: String(row.email || ""),
+        rating: Number(row.rating || 0),
+        message: String(row.message || ""),
+        status: row.status === "REVIEWED" ? "REVIEWED" : "NEW",
+        createdAt: String(row.created_at || new Date().toISOString()),
+        reviewedAt: row.updated_at || undefined
     };
-    feedbackRecords.push(feedback);
-    saveFeedback();
-    return feedback;
 }
 
-export function getAllFeedback() {
-    refreshFeedbackFromDisk();
-    return [...feedbackRecords].sort((a, b) => b.id - a.id);
+async function nextFeedbackId() {
+    const { data, error } = await supabase
+        .from("feedback")
+        .select("id")
+        .order("id", { ascending: false })
+        .limit(1);
+
+    if (error) throw new Error(error.message);
+    return Number(data?.[0]?.id || 0) + 1;
 }
 
-export function countNewFeedback() {
-    refreshFeedbackFromDisk();
-    return feedbackRecords.filter((feedback) => feedback.status === "NEW").length;
+export async function submitFeedback(input: { name: string; email: string; rating: number; message: string }) {
+    const createdAt = new Date().toISOString();
+
+    const { data, error } = await supabase
+        .from("feedback")
+        .insert({
+            id: await nextFeedbackId(),
+            name: input.name.trim(),
+            email: input.email.trim().toLowerCase(),
+            rating: Number(input.rating || 0),
+            message: input.message.trim(),
+            status: "NEW",
+            created_at: createdAt,
+            updated_at: createdAt
+        })
+        .select("*")
+        .single();
+
+    if (error) throw new Error(error.message);
+    return fromRow(data);
 }
 
-export function markFeedbackReviewed(feedbackId: number) {
-    refreshFeedbackFromDisk();
-    const feedback = feedbackRecords.find((item) => item.id === feedbackId);
-    if (!feedback) return null;
-    feedback.status = "REVIEWED";
-    feedback.reviewedAt = new Date().toISOString();
-    saveFeedback();
-    return feedback;
+export async function getAllFeedback() {
+    const { data, error } = await supabase
+        .from("feedback")
+        .select("*")
+        .is("deleted_at", null)
+        .order("id", { ascending: false });
+
+    if (error) throw new Error(error.message);
+    return (data || []).map(fromRow);
 }
 
-export function deleteFeedback(feedbackId: number) {
-    refreshFeedbackFromDisk();
-    const index = feedbackRecords.findIndex((item) => item.id === feedbackId);
-    if (index === -1) return null;
-    const [removed] = feedbackRecords.splice(index, 1);
-    saveFeedback();
-    return removed;
+export async function countNewFeedback() {
+    const { count, error } = await supabase
+        .from("feedback")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "NEW")
+        .is("deleted_at", null);
+
+    if (error) throw new Error(error.message);
+    return count || 0;
+}
+
+export async function markFeedbackReviewed(feedbackId: number) {
+    const { data, error } = await supabase
+        .from("feedback")
+        .update({
+            status: "REVIEWED",
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", feedbackId)
+        .is("deleted_at", null)
+        .select("*")
+        .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data ? fromRow(data) : null;
+}
+
+export async function deleteFeedback(feedbackId: number) {
+    const { data, error } = await supabase
+        .from("feedback")
+        .update({
+            deleted_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", feedbackId)
+        .select("*")
+        .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data ? fromRow(data) : null;
 }

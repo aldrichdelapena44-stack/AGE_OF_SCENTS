@@ -12,23 +12,31 @@ function disableCache(res: Response) {
     res.setHeader("Expires", "0");
 }
 
-export function listMyOrders(req: RequestWithUser, res: Response) {
-    disableCache(res);
-    return ok(res, getOrdersByUser(req.user!.id), "Orders fetched.");
-}
-
-export function getMyOrder(req: RequestWithUser, res: Response) {
-    disableCache(res);
-    const order = getOrderById(Number(req.params.id));
-    if (!order || order.userId !== req.user!.id) return fail(res, "Order not found.", 404);
-    return ok(res, order, "Order fetched.");
-}
-
-export function sendMyOrderMessage(req: RequestWithUser, res: Response) {
+export async function listMyOrders(req: RequestWithUser, res: Response) {
     try {
-        const order = getOrderById(Number(req.params.id));
+        disableCache(res);
+        return ok(res, await getOrdersByUser(req.user!.id), "Orders fetched.");
+    } catch (error) {
+        return fail(res, error instanceof Error ? error.message : "Orders fetch failed.", 400);
+    }
+}
+
+export async function getMyOrder(req: RequestWithUser, res: Response) {
+    try {
+        disableCache(res);
+        const order = await getOrderById(Number(req.params.id));
         if (!order || order.userId !== req.user!.id) return fail(res, "Order not found.", 404);
-        const updated = addOrderChatMessage(order.id, {
+        return ok(res, order, "Order fetched.");
+    } catch (error) {
+        return fail(res, error instanceof Error ? error.message : "Order fetch failed.", 400);
+    }
+}
+
+export async function sendMyOrderMessage(req: RequestWithUser, res: Response) {
+    try {
+        const order = await getOrderById(Number(req.params.id));
+        if (!order || order.userId !== req.user!.id) return fail(res, "Order not found.", 404);
+        const updated = await addOrderChatMessage(order.id, {
             senderId: req.user!.id,
             senderName: req.user!.fullName || "Client",
             senderRole: "CUSTOMER",

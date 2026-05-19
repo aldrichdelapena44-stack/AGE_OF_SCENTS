@@ -16,7 +16,7 @@ function makeOrderReference(orderId: number) {
 export async function createGcashPayment(req: RequestWithUser, res: Response) {
     try {
         const paymentMethod: PaymentMethod = req.body.paymentMethod === "COD" ? "COD" : "GCASH";
-        const order = createCheckoutOrder({
+        const order = await createCheckoutOrder({
             userId: req.user!.id,
             fullName: req.body.fullName,
             address: req.body.address,
@@ -30,20 +30,21 @@ export async function createGcashPayment(req: RequestWithUser, res: Response) {
         });
 
         const reference = makeOrderReference(order.id);
-        attachPaymentToOrder(order.id, paymentMethod, reference);
+        const updatedOrder = await attachPaymentToOrder(order.id, paymentMethod, reference);
+        const finalOrder = updatedOrder || {
+            ...order,
+            paymentProvider: paymentMethod,
+            paymentReference: reference
+        };
 
         return ok(
             res,
             {
-                order: {
-                    ...order,
-                    paymentProvider: paymentMethod,
-                    paymentReference: reference
-                },
+                order: finalOrder,
                 payment: {
                     provider: paymentMethod,
                     providerReference: reference,
-                    amount: order.total,
+                    amount: finalOrder.total,
                     status: "PENDING_CONFIRMATION"
                 }
             },

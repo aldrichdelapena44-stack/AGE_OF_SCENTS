@@ -8,18 +8,18 @@ import {
     validateUser
 } from "../utils/auth-store";
 
-export function registerUser(input: {
+export async function registerUser(input: {
     fullName: string;
     email: string;
     password: string;
 }) {
-    const existing = findUserByEmail(input.email);
+    const existing = await findUserByEmail(input.email);
 
     if (existing) {
         throw new Error("Email is already registered.");
     }
 
-    const user = createUser(input.fullName, input.email, input.password);
+    const user = await createUser(input.fullName, input.email, input.password);
     const token = createSession(user.id);
 
     return {
@@ -28,8 +28,8 @@ export function registerUser(input: {
     };
 }
 
-export function loginUser(input: { email: string; password: string }) {
-    const user = validateUser(input.email, input.password);
+export async function loginUser(input: { email: string; password: string }) {
+    const user = await validateUser(input.email, input.password);
 
     if (!user) {
         throw new Error("Invalid email or password.");
@@ -43,8 +43,8 @@ export function loginUser(input: { email: string; password: string }) {
     };
 }
 
-export function getCurrentUser(userId: number) {
-    const user = getUserById(userId);
+export async function getCurrentUser(userId: number) {
+    const user = await getUserById(userId);
 
     if (!user) {
         throw new Error("User not found.");
@@ -53,6 +53,6 @@ export function getCurrentUser(userId: number) {
     return sanitizeUser(user);
 }
 
-export function getAllUsers() {
+export async function getAllUsers() {
     return listUsers();
 }

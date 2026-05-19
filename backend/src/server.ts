@@ -4,7 +4,12 @@ import { env } from "./config/env";
 import { ensureConfiguredAdminUser } from "./utils/auth-store";
 
 async function bootstrap() {
-    ensureConfiguredAdminUser();
+    try {
+        await ensureConfiguredAdminUser();
+    } catch (error) {
+        console.warn("Admin user setup skipped or failed.");
+        console.warn(error);
+    }
 
     try {
         await connectDatabase();

@@ -6,43 +6,52 @@ import { countPendingVerifications, getAllVerifications, syncAllUserVerification
 import { countPendingStories, getAdminStories } from "./story.service";
 import { getStoreSettings } from "./store-settings.service";
 
-export function getAdminSummary() {
-    syncAllUserVerificationStatuses();
+export async function getAdminSummary() {
+    await syncAllUserVerificationStatuses();
+    const [users, products, orders, pendingVerifications, newFeedback, pendingStories] = await Promise.all([
+        getAllUsers(),
+        countProducts(),
+        countOrders(),
+        countPendingVerifications(),
+        countNewFeedback(),
+        countPendingStories()
+    ]);
+
     return {
-        users: getAllUsers().length,
-        products: countProducts(),
-        orders: countOrders(),
-        pendingVerifications: countPendingVerifications(),
-        newFeedback: countNewFeedback(),
-        pendingStories: countPendingStories()
+        users: users.length,
+        products,
+        orders,
+        pendingVerifications,
+        newFeedback,
+        pendingStories
     };
 }
 
-export function getAdminUsers() {
-    syncAllUserVerificationStatuses();
+export async function getAdminUsers() {
+    await syncAllUserVerificationStatuses();
     return getAllUsers();
 }
 
-export function getAdminOrders() {
+export async function getAdminOrders() {
     return getAllOrders();
 }
 
-export function getAdminVerifications() {
+export async function getAdminVerifications() {
     return getAllVerifications();
 }
 
-export function getAdminProductList() {
+export async function getAdminProductList() {
     return getAdminProducts();
 }
 
-export function getAdminFeedback() {
+export async function getAdminFeedback() {
     return getAllFeedback();
 }
 
-export function getAdminStoriesList() {
+export async function getAdminStoriesList() {
     return getAdminStories();
 }
 
-export function getAdminStoreSettings() {
+export async function getAdminStoreSettings() {
     return getStoreSettings();
 }

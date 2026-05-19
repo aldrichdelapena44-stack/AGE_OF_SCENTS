@@ -1,5 +1,4 @@
-import fs from "fs";
-import path from "path";
+import { supabase } from "../config/supabase";
 import { decreaseProductStock } from "./product.service";
 import { getDeliveryLandmarkByName } from "./store-settings.service";
 
@@ -62,13 +61,6 @@ export type StoredOrder = {
     updatedAt?: string;
 };
 
-const dataDir = path.join(process.cwd(), "data");
-const ordersDataFile = path.join(dataDir, "orders.json");
-
-function ensureDataDir() {
-    fs.mkdirSync(dataDir, { recursive: true });
-}
-
 function normalizeStatus(status?: string): OrderStatus {
     if (status === "PAID") return "PAYMENT_CONFIRMATION";
     if (status === "PROCESSING") return "ORDER_PROCESSING";
@@ -109,41 +101,85 @@ function pushSystemMessage(order: StoredOrder, message: string) {
     });
 }
 
-function loadOrders() {
-    try {
-        if (!fs.existsSync(ordersDataFile)) return [] as StoredOrder[];
-        const parsed = JSON.parse(fs.readFileSync(ordersDataFile, "utf8")) as StoredOrder[];
-        return Array.isArray(parsed) ? parsed.map((order) => {
-            const hydrated: StoredOrder = {
-                ...order,
-                status: normalizeStatus(order.status as string),
-                landmarkStatus: order.landmarkStatus || (order.needsLandmarkConfirmation ? "PENDING" : "APPROVED"),
-                chatMessages: Array.isArray(order.chatMessages) ? order.chatMessages : []
-            };
-            if (typeof hydrated.subtotal === "undefined") hydrated.subtotal = calculateSubtotal(hydrated.items || []);
-            if (typeof hydrated.shippingFee === "undefined") hydrated.shippingFee = safeMoney(Number(hydrated.total || 0) - Number(hydrated.subtotal || 0));
-            recalculateOrderTotal(hydrated);
-            return hydrated;
-        }) : [];
-    } catch {
-        return [] as StoredOrder[];
-    }
+function fromRow(row: any): StoredOrder {
+    const order: StoredOrder = {
+        id: Number(row.id),
+        userId: Number(row.user_id || 0),
+        fullName: String(row.full_name || ""),
+        address: String(row.address || ""),
+        gcashNumber: String(row.gcash_number || ""),
+        customerGcashNumber: String(row.customer_gcash_number || ""),
+        selectedLandmark: String(row.selected_landmark || ""),
+        customLandmark: String(row.custom_landmark || ""),
+        needsLandmarkConfirmation: Boolean(row.needs_landmark_confirmation),
+        landmarkStatus: row.landmark_status || (row.needs_landmark_confirmation ? "PENDING" : "APPROVED"),
+        adminConfirmationNote: String(row.admin_confirmation_note || ""),
+        deliveryNote: String(row.delivery_note || ""),
+        paymentMethod: row.payment_method === "COD" ? "COD" : "GCASH",
+        paymentProvider: String(row.payment_provider || ""),
+        paymentReference: String(row.payment_reference || ""),
+        items: Array.isArray(row.items) ? row.items : [],
+        subtotal: safeMoney(row.subtotal),
+        shippingFee: safeMoney(row.shipping_fee),
+        total: safeMoney(row.total),
+        status: normalizeStatus(row.status),
+        adminDeleted: Boolean(row.admin_deleted),
+        adminDeletedAt: row.admin_deleted_at || undefined,
+        adminDeletionNote: String(row.admin_deletion_note || ""),
+        chatMessages: Array.isArray(row.chat_messages) ? row.chat_messages : [],
+        createdAt: String(row.created_at || new Date().toISOString()),
+        updatedAt: row.updated_at || undefined
+    };
+
+    recalculateOrderTotal(order);
+    return order;
 }
 
-const orders: StoredOrder[] = loadOrders();
-let nextOrderId = orders.reduce((max, order) => Math.max(max, order.id), 0) + 1;
+function toRow(order: StoredOrder) {
+    recalculateOrderTotal(order);
 
-function refreshOrdersFromDisk() {
-    orders.splice(0, orders.length, ...loadOrders());
-    nextOrderId = orders.reduce((max, order) => Math.max(max, order.id), 0) + 1;
+    return {
+        id: Number(order.id),
+        user_id: Number(order.userId),
+        full_name: order.fullName,
+        address: order.address,
+        gcash_number: order.gcashNumber || "",
+        customer_gcash_number: order.customerGcashNumber || "",
+        selected_landmark: order.selectedLandmark || "",
+        custom_landmark: order.customLandmark || "",
+        needs_landmark_confirmation: Boolean(order.needsLandmarkConfirmation),
+        landmark_status: order.landmarkStatus || "PENDING",
+        admin_confirmation_note: order.adminConfirmationNote || "",
+        delivery_note: order.deliveryNote || "",
+        items: order.items || [],
+        subtotal: safeMoney(order.subtotal),
+        shipping_fee: safeMoney(order.shippingFee),
+        total: safeMoney(order.total),
+        status: normalizeStatus(order.status),
+        payment_method: order.paymentMethod,
+        payment_provider: order.paymentProvider || "",
+        payment_reference: order.paymentReference || "",
+        admin_deleted: Boolean(order.adminDeleted),
+        admin_deleted_at: order.adminDeletedAt || null,
+        admin_deletion_note: order.adminDeletionNote || "",
+        chat_messages: order.chatMessages || [],
+        created_at: order.createdAt,
+        updated_at: order.updatedAt || new Date().toISOString()
+    };
 }
 
-function saveOrders() {
-    ensureDataDir();
-    fs.writeFileSync(ordersDataFile, JSON.stringify(orders, null, 2));
+async function nextOrderId() {
+    const { data, error } = await supabase
+        .from("orders")
+        .select("id")
+        .order("id", { ascending: false })
+        .limit(1);
+
+    if (error) throw new Error(error.message);
+    return Number(data?.[0]?.id || 0) + 1;
 }
 
-export function createCheckoutOrder(input: {
+export async function createCheckoutOrder(input: {
     userId: number;
     fullName: string;
     address: string;
@@ -155,27 +191,31 @@ export function createCheckoutOrder(input: {
     paymentMethod: PaymentMethod;
     items: CheckoutItem[];
 }) {
-    refreshOrdersFromDisk();
     if (!Array.isArray(input.items) || input.items.length === 0) {
         throw new Error("Cart is empty.");
     }
 
     for (const item of input.items) {
-        decreaseProductStock(Number(item.id), Number(item.quantity));
+        await decreaseProductStock(Number(item.id), Number(item.quantity));
     }
 
     const custom = (input.customLandmark || "").trim();
     const selectedLandmark = String(input.selectedLandmark || "").trim();
     const isOtherLandmark = selectedLandmark.toUpperCase() === "OTHER" || custom.length > 0;
-    const matchedLandmark = !isOtherLandmark ? getDeliveryLandmarkByName(selectedLandmark) : null;
+    const matchedLandmark = !isOtherLandmark ? await getDeliveryLandmarkByName(selectedLandmark) : null;
     const shippingFee = matchedLandmark ? safeMoney(matchedLandmark.shippingFee) : 0;
     const needsConfirmation = Boolean(input.needsLandmarkConfirmation || isOtherLandmark || !matchedLandmark);
 
-    const normalizedItems = input.items.map((item) => ({ ...item, quantity: Number(item.quantity), price: Number(item.price) }));
+    const normalizedItems = input.items.map((item) => ({
+        ...item,
+        quantity: Number(item.quantity),
+        price: Number(item.price)
+    }));
     const subtotal = calculateSubtotal(normalizedItems);
+    const createdAt = new Date().toISOString();
 
     const order: StoredOrder = {
-        id: nextOrderId++,
+        id: await nextOrderId(),
         userId: input.userId,
         fullName: input.fullName.trim(),
         address: input.address.trim(),
@@ -192,69 +232,86 @@ export function createCheckoutOrder(input: {
         total: safeMoney(subtotal + shippingFee),
         status: "PENDING_CONFIRMATION",
         chatMessages: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        createdAt,
+        updatedAt: createdAt
     };
 
-    orders.push(order);
-    saveOrders();
-    return order;
+    const { data, error } = await supabase
+        .from("orders")
+        .insert(toRow(order))
+        .select("*")
+        .single();
+
+    if (error) throw new Error(error.message);
+    return fromRow(data);
 }
 
-export function attachPaymentToOrder(orderId: number, paymentProvider: string, paymentReference: string) {
-    refreshOrdersFromDisk();
-    const order = orders.find((item) => item.id === orderId);
+async function saveOrder(order: StoredOrder) {
+    const { data, error } = await supabase
+        .from("orders")
+        .upsert(toRow(order), { onConflict: "id" })
+        .select("*")
+        .single();
+
+    if (error) throw new Error(error.message);
+    return fromRow(data);
+}
+
+export async function attachPaymentToOrder(orderId: number, paymentProvider: string, paymentReference: string) {
+    const order = await getOrderById(orderId, true);
     if (!order) return null;
 
     order.paymentProvider = paymentProvider;
     order.paymentReference = paymentReference;
     order.updatedAt = new Date().toISOString();
-    saveOrders();
-    return order;
+    return saveOrder(order);
 }
 
-export function markOrderPaidByReference(reference: string) {
-    refreshOrdersFromDisk();
-    const order = orders.find((item) => item.paymentReference === reference);
-    if (!order) return null;
+export async function markOrderPaidByReference(reference: string) {
+    const { data, error } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("payment_reference", reference)
+        .maybeSingle();
 
+    if (error) throw new Error(error.message);
+    if (!data) return null;
+
+    const order = fromRow(data);
     order.status = "PAYMENT_CONFIRMATION";
     order.updatedAt = new Date().toISOString();
-    saveOrders();
-    return order;
+    return saveOrder(order);
 }
 
-export function updateOrderStatus(orderId: number, status: OrderStatus, deliveryNote?: string, shippingFee?: number) {
-    refreshOrdersFromDisk();
-    const order = orders.find((item) => item.id === orderId);
+export async function updateOrderStatus(orderId: number, status: OrderStatus, deliveryNote?: string, shippingFee?: number) {
+    const order = await getOrderById(orderId, true);
     if (!order) return null;
+
     order.status = normalizeStatus(status);
     if (typeof deliveryNote === "string") order.deliveryNote = deliveryNote.trim();
     if (typeof shippingFee !== "undefined" && Number.isFinite(Number(shippingFee))) order.shippingFee = safeMoney(shippingFee);
     recalculateOrderTotal(order);
     order.updatedAt = new Date().toISOString();
-    saveOrders();
-    return order;
+    return saveOrder(order);
 }
 
-export function updateOrderLandmarkStatus(orderId: number, landmarkStatus: "APPROVED" | "REJECTED" | "PENDING", note?: string, shippingFee?: number) {
-    refreshOrdersFromDisk();
-    const order = orders.find((item) => item.id === orderId);
+export async function updateOrderLandmarkStatus(orderId: number, landmarkStatus: "APPROVED" | "REJECTED" | "PENDING", note?: string, shippingFee?: number) {
+    const order = await getOrderById(orderId, true);
     if (!order) return null;
+
     order.landmarkStatus = landmarkStatus;
     order.needsLandmarkConfirmation = landmarkStatus === "PENDING";
     order.adminConfirmationNote = note?.trim() || order.adminConfirmationNote;
     if (typeof shippingFee !== "undefined" && Number.isFinite(Number(shippingFee))) order.shippingFee = safeMoney(shippingFee);
     recalculateOrderTotal(order);
     order.updatedAt = new Date().toISOString();
-    saveOrders();
-    return order;
+    return saveOrder(order);
 }
 
-export function addOrderChatMessage(orderId: number, input: { senderId: number; senderName: string; senderRole: "ADMIN" | "CUSTOMER"; message: string }) {
-    refreshOrdersFromDisk();
-    const order = orders.find((item) => item.id === orderId);
+export async function addOrderChatMessage(orderId: number, input: { senderId: number; senderName: string; senderRole: "ADMIN" | "CUSTOMER"; message: string }) {
+    const order = await getOrderById(orderId, true);
     if (!order) return null;
+
     const message = input.message.trim();
     if (message.length < 1) throw new Error("Message is required.");
     if (message.length > 1000) throw new Error("Message is too long.");
@@ -269,40 +326,65 @@ export function addOrderChatMessage(orderId: number, input: { senderId: number; 
         createdAt: new Date().toISOString()
     });
     order.updatedAt = new Date().toISOString();
-    saveOrders();
-    return order;
+    return saveOrder(order);
 }
 
-export function deleteOrderFromAdmin(orderId: number) {
-    refreshOrdersFromDisk();
-    const index = orders.findIndex((item) => item.id === orderId);
-    if (index === -1) return null;
-    const [removed] = orders.splice(index, 1);
-    removed.adminDeleted = true;
-    removed.adminDeletedAt = new Date().toISOString();
-    removed.adminDeletionNote = "You're not eligible to pay. Please use a valid and transparent transaction.";
-    removed.status = "CANCELLED";
-    removed.updatedAt = new Date().toISOString();
-    saveOrders();
-    return removed;
+export async function deleteOrderFromAdmin(orderId: number) {
+    const order = await getOrderById(orderId, true);
+    if (!order) return null;
+
+    order.adminDeleted = true;
+    order.adminDeletedAt = new Date().toISOString();
+    order.adminDeletionNote = "You're not eligible to pay. Please use a valid and transparent transaction.";
+    order.status = "CANCELLED";
+    order.updatedAt = new Date().toISOString();
+    pushSystemMessage(order, order.adminDeletionNote);
+    return saveOrder(order);
 }
 
-export function getOrdersByUser(userId: number) {
-    refreshOrdersFromDisk();
-    return orders.filter((order) => order.userId === userId && !order.adminDeleted).sort((a, b) => b.id - a.id);
+export async function getOrdersByUser(userId: number) {
+    const { data, error } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("admin_deleted", false)
+        .order("id", { ascending: false });
+
+    if (error) throw new Error(error.message);
+    return (data || []).map(fromRow);
 }
 
-export function getOrderById(orderId: number) {
-    refreshOrdersFromDisk();
-    return orders.find((order) => order.id === orderId && !order.adminDeleted) || null;
+export async function getOrderById(orderId: number, includeDeleted = false) {
+    let query = supabase
+        .from("orders")
+        .select("*")
+        .eq("id", orderId);
+
+    if (!includeDeleted) query = query.eq("admin_deleted", false);
+
+    const { data, error } = await query.maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data ? fromRow(data) : null;
 }
 
-export function getAllOrders() {
-    refreshOrdersFromDisk();
-    return [...orders].filter((order) => !order.adminDeleted).sort((a, b) => b.id - a.id);
+export async function getAllOrders() {
+    const { data, error } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("admin_deleted", false)
+        .order("id", { ascending: false });
+
+    if (error) throw new Error(error.message);
+    return (data || []).map(fromRow);
 }
 
-export function countOrders() {
-    refreshOrdersFromDisk();
-    return orders.filter((order) => !order.adminDeleted).length;
+export async function countOrders() {
+    const { count, error } = await supabase
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("admin_deleted", false);
+
+    if (error) throw new Error(error.message);
+    return count || 0;
 }

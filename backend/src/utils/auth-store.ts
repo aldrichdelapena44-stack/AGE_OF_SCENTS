@@ -1,6 +1,5 @@
-import fs from "fs";
-import path from "path";
 import { randomUUID } from "crypto";
+import { supabase } from "../config/supabase";
 
 export type UserRole = "CUSTOMER" | "ADMIN";
 export type VerificationState = "UNVERIFIED" | "PENDING" | "APPROVED" | "REJECTED";
@@ -15,34 +14,44 @@ export type StoredUser = {
     createdAt: string;
 };
 
-const dataDir = path.join(process.cwd(), "data");
-const usersDataFile = path.join(dataDir, "users.json");
 const sessions = new Map<string, number>();
-
-function ensureDataDir() {
-    fs.mkdirSync(dataDir, { recursive: true });
-}
 
 function normalizeEmail(email: string) {
     return email.trim().toLowerCase();
 }
 
-function loadUsers() {
-    try {
-        if (!fs.existsSync(usersDataFile)) return [] as StoredUser[];
-        const parsed = JSON.parse(fs.readFileSync(usersDataFile, "utf8")) as StoredUser[];
-        return Array.isArray(parsed) ? parsed : [];
-    } catch {
-        return [] as StoredUser[];
-    }
+function normalizeRole(role?: string): UserRole {
+    return role === "ADMIN" ? "ADMIN" : "CUSTOMER";
 }
 
-const users: StoredUser[] = loadUsers();
-let nextUserId = users.reduce((max, user) => Math.max(max, user.id), 0) + 1;
+function normalizeVerificationStatus(status?: string): VerificationState {
+    if (status === "APPROVED" || status === "PENDING" || status === "REJECTED" || status === "UNVERIFIED") return status;
+    return "UNVERIFIED";
+}
 
-function saveUsers() {
-    ensureDataDir();
-    fs.writeFileSync(usersDataFile, JSON.stringify(users, null, 2));
+function fromRow(row: any): StoredUser {
+    return {
+        id: Number(row.id),
+        fullName: String(row.full_name || ""),
+        email: String(row.email || ""),
+        password: String(row.password_hash || ""),
+        role: normalizeRole(row.role),
+        verificationStatus: normalizeVerificationStatus(row.verification_status),
+        createdAt: String(row.created_at || new Date().toISOString())
+    };
+}
+
+function toRow(user: StoredUser) {
+    return {
+        id: user.id,
+        full_name: user.fullName,
+        email: normalizeEmail(user.email),
+        password_hash: user.password,
+        role: user.role,
+        verification_status: user.verificationStatus,
+        updated_at: new Date().toISOString(),
+        created_at: user.createdAt
+    };
 }
 
 export function sanitizeUser(user: StoredUser) {
@@ -56,29 +65,68 @@ export function sanitizeUser(user: StoredUser) {
     };
 }
 
-export function listUsers() {
-    return users.map(sanitizeUser);
+export type SanitizedUser = ReturnType<typeof sanitizeUser>;
+
+async function nextUserId() {
+    const { data, error } = await supabase
+        .from("users")
+        .select("id")
+        .order("id", { ascending: false })
+        .limit(1);
+
+    if (error) throw new Error(error.message);
+    return Number(data?.[0]?.id || 0) + 1;
 }
 
-export function getUserById(id: number) {
-    return users.find((user) => user.id === id) || null;
+export async function listUsers() {
+    const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .order("id", { ascending: true });
+
+    if (error) throw new Error(error.message);
+    return (data || []).map(fromRow).map(sanitizeUser);
 }
 
-export function findUserByEmail(email: string) {
+export async function getUserById(id: number) {
+    const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data ? fromRow(data) : null;
+}
+
+export async function findUserByEmail(email: string) {
     const normalized = normalizeEmail(email);
-    return users.find((user) => normalizeEmail(user.email) === normalized) || null;
+    const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("email", normalized)
+        .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data ? fromRow(data) : null;
 }
 
-export function hasAdminUser() {
-    return users.some((user) => user.role === "ADMIN");
+export async function hasAdminUser() {
+    const { count, error } = await supabase
+        .from("users")
+        .select("id", { count: "exact", head: true })
+        .eq("role", "ADMIN");
+
+    if (error) throw new Error(error.message);
+    return Boolean((count || 0) > 0);
 }
 
-export function createUser(fullName: string, email: string, password: string) {
+export async function createUser(fullName: string, email: string, password: string) {
     const normalizedEmail = normalizeEmail(email);
-    const firstAdmin = !hasAdminUser();
+    const firstAdmin = !(await hasAdminUser());
 
     const user: StoredUser = {
-        id: nextUserId++,
+        id: await nextUserId(),
         fullName: fullName.trim(),
         email: normalizedEmail,
         password,
@@ -87,13 +135,18 @@ export function createUser(fullName: string, email: string, password: string) {
         createdAt: new Date().toISOString()
     };
 
-    users.push(user);
-    saveUsers();
-    return user;
+    const { data, error } = await supabase
+        .from("users")
+        .insert(toRow(user))
+        .select("*")
+        .single();
+
+    if (error) throw new Error(error.message);
+    return fromRow(data);
 }
 
-export function validateUser(email: string, password: string) {
-    const user = findUserByEmail(email);
+export async function validateUser(email: string, password: string) {
+    const user = await findUserByEmail(email);
     if (!user) return null;
     return user.password === password ? user : null;
 }
@@ -104,40 +157,56 @@ export function createSession(userId: number) {
     return token;
 }
 
-export function getUserByToken(token: string) {
+export async function getUserByToken(token: string) {
     const userId = sessions.get(token);
     if (!userId) return null;
     return getUserById(userId);
 }
 
-export function updateUserVerificationStatus(userId: number, verificationStatus: VerificationState) {
-    const user = getUserById(userId);
-    if (!user) return null;
+export async function updateUserVerificationStatus(userId: number, verificationStatus: VerificationState) {
+    const { data, error } = await supabase
+        .from("users")
+        .update({
+            verification_status: verificationStatus,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", userId)
+        .select("*")
+        .maybeSingle();
 
-    user.verificationStatus = verificationStatus;
-    saveUsers();
-    return user;
+    if (error) throw new Error(error.message);
+    return data ? fromRow(data) : null;
 }
 
-export function ensureConfiguredAdminUser() {
+export async function ensureConfiguredAdminUser() {
     const email = process.env.ADMIN_EMAIL?.trim();
     const password = process.env.ADMIN_PASSWORD?.trim();
     const fullName = process.env.ADMIN_FULL_NAME?.trim() || "AGE OF SCENT Admin";
 
     if (!email || !password) return null;
 
-    const existing = findUserByEmail(email);
+    const existing = await findUserByEmail(email);
     if (existing) {
-        existing.fullName = fullName;
-        existing.password = password;
-        existing.role = "ADMIN";
-        existing.verificationStatus = "APPROVED";
-        saveUsers();
-        return existing;
+        const updated: StoredUser = {
+            ...existing,
+            fullName,
+            password,
+            role: "ADMIN",
+            verificationStatus: "APPROVED"
+        };
+
+        const { data, error } = await supabase
+            .from("users")
+            .upsert(toRow(updated), { onConflict: "id" })
+            .select("*")
+            .single();
+
+        if (error) throw new Error(error.message);
+        return fromRow(data);
     }
 
     const admin: StoredUser = {
-        id: nextUserId++,
+        id: await nextUserId(),
         fullName,
         email: normalizeEmail(email),
         password,
@@ -146,7 +215,12 @@ export function ensureConfiguredAdminUser() {
         createdAt: new Date().toISOString()
     };
 
-    users.push(admin);
-    saveUsers();
-    return admin;
+    const { data, error } = await supabase
+        .from("users")
+        .insert(toRow(admin))
+        .select("*")
+        .single();
+
+    if (error) throw new Error(error.message);
+    return fromRow(data);
 }

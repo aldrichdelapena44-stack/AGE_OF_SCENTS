@@ -1,6 +1,6 @@
-import path from "path";
 import { Request, Response } from "express";
 import { createStory, getPublicStories, getStoriesByUser, removeOwnStory, updateOwnStory } from "../services/story.service";
+import { uploadPublicImage } from "../config/supabase";
 import { fail, ok } from "../utils/response";
 
 type RequestWithUserAndFile = Request & {
@@ -8,26 +8,26 @@ type RequestWithUserAndFile = Request & {
     file?: Express.Multer.File;
 };
 
-function toPublicUploadUrl(filePath: string) {
-    const normalized = filePath.replace(/\\/g, "/");
-    const uploadsIndex = normalized.lastIndexOf("/uploads/");
-    if (uploadsIndex >= 0) return normalized.slice(uploadsIndex);
-    if (normalized.startsWith("uploads/")) return `/${normalized}`;
-    return `/uploads/stories/${path.basename(normalized)}`;
-}
-
-export function listStories(_req: Request, res: Response) {
-    return ok(res, getPublicStories(), "Stories fetched.");
-}
-
-export function listMyStories(req: RequestWithUserAndFile, res: Response) {
-    return ok(res, getStoriesByUser(req.user!.id), "Your stories fetched.");
-}
-
-export function submitStory(req: RequestWithUserAndFile, res: Response) {
+export async function listStories(_req: Request, res: Response) {
     try {
-        const imageUrl = req.file?.path ? toPublicUploadUrl(req.file.path) : "";
-        const story = createStory({
+        return ok(res, await getPublicStories(), "Stories fetched.");
+    } catch (error) {
+        return fail(res, error instanceof Error ? error.message : "Stories fetch failed.", 400);
+    }
+}
+
+export async function listMyStories(req: RequestWithUserAndFile, res: Response) {
+    try {
+        return ok(res, await getStoriesByUser(req.user!.id), "Your stories fetched.");
+    } catch (error) {
+        return fail(res, error instanceof Error ? error.message : "Stories fetch failed.", 400);
+    }
+}
+
+export async function submitStory(req: RequestWithUserAndFile, res: Response) {
+    try {
+        const imageUrl = req.file ? await uploadPublicImage("story-images", "stories", req.file) : "";
+        const story = await createStory({
             userId: req.user!.id,
             userName: req.user!.fullName,
             imageUrl,
@@ -39,10 +39,10 @@ export function submitStory(req: RequestWithUserAndFile, res: Response) {
     }
 }
 
-export function updateStory(req: RequestWithUserAndFile, res: Response) {
+export async function updateStory(req: RequestWithUserAndFile, res: Response) {
     try {
-        const imageUrl = req.file?.path ? toPublicUploadUrl(req.file.path) : undefined;
-        const story = updateOwnStory(Number(req.params.id), req.user!.id, {
+        const imageUrl = req.file ? await uploadPublicImage("story-images", "stories", req.file) : undefined;
+        const story = await updateOwnStory(Number(req.params.id), req.user!.id, {
             imageUrl,
             note: typeof req.body.note === "string" ? req.body.note : undefined
         });
@@ -53,8 +53,12 @@ export function updateStory(req: RequestWithUserAndFile, res: Response) {
     }
 }
 
-export function deleteMyStory(req: RequestWithUserAndFile, res: Response) {
-    const story = removeOwnStory(Number(req.params.id), req.user!.id);
-    if (!story) return fail(res, "Story not found.", 404);
-    return ok(res, story, "Story removed.");
+export async function deleteMyStory(req: RequestWithUserAndFile, res: Response) {
+    try {
+        const story = await removeOwnStory(Number(req.params.id), req.user!.id);
+        if (!story) return fail(res, "Story not found.", 404);
+        return ok(res, story, "Story removed.");
+    } catch (error) {
+        return fail(res, error instanceof Error ? error.message : "Story delete failed.", 400);
+    }
 }

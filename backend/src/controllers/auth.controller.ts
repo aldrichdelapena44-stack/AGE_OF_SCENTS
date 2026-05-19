@@ -8,9 +8,9 @@ type RequestWithUser = Request & {
     };
 };
 
-export function register(req: Request, res: Response) {
+export async function register(req: Request, res: Response) {
     try {
-        const result = registerUser(req.body);
+        const result = await registerUser(req.body);
         return ok(res, result, "Registration successful.", 201);
     } catch (error) {
         return fail(
@@ -21,18 +21,18 @@ export function register(req: Request, res: Response) {
     }
 }
 
-export function login(req: Request, res: Response) {
+export async function login(req: Request, res: Response) {
     try {
-        const result = loginUser(req.body);
+        const result = await loginUser(req.body);
         return ok(res, result, "Login successful.");
     } catch (error) {
         return fail(res, error instanceof Error ? error.message : "Login failed.", 401);
     }
 }
 
-export function me(req: RequestWithUser, res: Response) {
+export async function me(req: RequestWithUser, res: Response) {
     try {
-        const user = getCurrentUser(req.user!.id);
+        const user = await getCurrentUser(req.user!.id);
         return ok(res, user, "Current user fetched.");
     } catch (error) {
         return fail(res, error instanceof Error ? error.message : "Failed.", 400);
